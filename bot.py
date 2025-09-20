@@ -575,8 +575,14 @@ class DaryReiBot:
 # Создаем экземпляр бота
 bot = DaryReiBot()
 
-# Для Railway/Heroku - экспортируем app
+# Для Vercel - экспортируем app
 app = bot.http_app
 
+# Запускаем бота в фоне для Vercel
 if __name__ == "__main__":
     bot.run()
+else:
+    # Для Vercel - запускаем бота в фоне
+    import threading
+    bot_thread = threading.Thread(target=bot.run, daemon=True)
+    bot_thread.start()
