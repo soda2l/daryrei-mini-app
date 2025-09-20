@@ -1,0 +1,2 @@
+BOT_TOKEN=your_bot_token_here
+ORDER_GROUP_ID=-1003025937033
