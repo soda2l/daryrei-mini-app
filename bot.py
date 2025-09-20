@@ -84,7 +84,7 @@ class DaryReiBot:
     def run_http_server(self):
         """Запуск HTTP сервера"""
         port = int(os.getenv("PORT", 8000))
-        uvicorn.run(self.http_app, host="0.0.0.0", port=port, log_level="info", access_log=False)
+        uvicorn.run(self.http_app, host="0.0.0.0", port=port, log_level="info", access_log=False, loop="asyncio")
     
     async def health_check(self):
         """Проверка здоровья API"""
