@@ -796,6 +796,27 @@
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
         }
 
+        .username-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .username-prefix {
+            position: absolute;
+            left: 12px;
+            color: #666;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .username-input {
+            padding-left: 24px;
+        }
+
         .form-textarea {
             width: 100%;
             padding: 12px 16px;
@@ -1051,7 +1072,10 @@
             <div class="checkout-form">
                 <div class="form-group">
                     <label for="telegram-username" class="form-label">Ваш никнейм в Telegram *</label>
-                    <input type="text" id="telegram-username" class="form-input" placeholder="@username или username" required>
+                    <div class="username-input-container">
+                        <span class="username-prefix">@</span>
+                        <input type="text" id="telegram-username" class="form-input username-input" placeholder="username" required>
+                    </div>
                     <div class="form-hint">Укажите ваш никнейм для связи по поводу заказа</div>
                 </div>
 
@@ -1284,6 +1308,9 @@
             
             // Добавляем обработчики свайпов для категорий
             setupCategorySwipes();
+            
+            // Настраиваем поле никнейма
+            setupUsernameInput();
         });
 
         // Показать популярные товары (первые 4 свечи)
@@ -1602,8 +1629,8 @@
                 return;
             }
 
-            // Нормализуем никнейм (убираем @ если есть)
-            const normalizedUsername = username.startsWith('@') ? username.substring(1) : username;
+            // Никнейм уже без @, так как пользователь вводит только username
+            const normalizedUsername = username;
 
             // Блокируем кнопку
             submitBtn.disabled = true;
@@ -1798,8 +1825,8 @@
                 return;
             }
 
-            // Нормализуем никнейм (убираем @ если есть)
-            const normalizedUsername = username.startsWith('@') ? username.substring(1) : username;
+            // Никнейм уже без @, так как пользователь вводит только username
+            const normalizedUsername = username;
 
             // Формируем сообщение для отправки
             const orderMessage = formatOrderMessage(normalizedUsername, comment);
@@ -2038,6 +2065,34 @@
         // Закрыть модальное окно товара
         function closeProductModal() {
             document.getElementById('product-modal').classList.add('hidden');
+        }
+
+        // Настроить поле никнейма
+        function setupUsernameInput() {
+            const usernameInput = document.getElementById('telegram-username');
+            if (!usernameInput) return;
+            
+            // Предотвращаем ввод @ пользователем
+            usernameInput.addEventListener('input', function(e) {
+                let value = e.target.value;
+                // Убираем @ если пользователь попытался его ввести
+                if (value.startsWith('@')) {
+                    value = value.substring(1);
+                    e.target.value = value;
+                }
+                // Убираем пробелы
+                value = value.replace(/\s/g, '');
+                e.target.value = value;
+            });
+            
+            // Предотвращаем вставку @
+            usernameInput.addEventListener('paste', function(e) {
+                e.preventDefault();
+                let pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                // Убираем @ и пробелы
+                pastedText = pastedText.replace(/^@/, '').replace(/\s/g, '');
+                e.target.value = pastedText;
+            });
         }
 
         // Настроить свайпы для категорий
