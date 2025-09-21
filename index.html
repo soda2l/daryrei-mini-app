@@ -156,7 +156,8 @@
 
         /* Специальные стили для стикерпаков */
         .product-card[data-category="stickers"] .product-image {
-            background-size: 60%;
+            background-size: cover;
+            background-position: center;
         }
 
         .product-content {
@@ -275,6 +276,12 @@
             padding-bottom: 8px;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        .category-filter::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
 
         .category-btn {
@@ -1337,6 +1344,9 @@
             });
             event.target.classList.add('active');
             
+            // Автопрокрутка к активной кнопке
+            scrollToActiveCategory(event.target);
+            
             // Фильтровать товары
             const container = document.getElementById('all-products');
             container.innerHTML = '';
@@ -1345,6 +1355,29 @@
             filteredProducts.forEach(product => {
                 const productCard = createProductCard(product);
                 container.appendChild(productCard);
+            });
+        }
+
+        // Автопрокрутка к активной категории
+        function scrollToActiveCategory(activeButton) {
+            const categoryFilter = document.querySelector('.category-filter');
+            if (!categoryFilter) return;
+            
+            const filterRect = categoryFilter.getBoundingClientRect();
+            const buttonRect = activeButton.getBoundingClientRect();
+            
+            // Вычисляем позицию для центрирования кнопки
+            const scrollLeft = categoryFilter.scrollLeft;
+            const buttonLeft = buttonRect.left - filterRect.left + scrollLeft;
+            const buttonWidth = buttonRect.width;
+            const filterWidth = filterRect.width;
+            
+            // Центрируем кнопку в видимой области
+            const targetScrollLeft = buttonLeft - (filterWidth / 2) + (buttonWidth / 2);
+            
+            categoryFilter.scrollTo({
+                left: targetScrollLeft,
+                behavior: 'smooth'
             });
         }
 
@@ -2091,11 +2124,18 @@
                     
                     // Находим и активируем нужную кнопку
                     const categoryButtons = document.querySelectorAll('.category-btn');
+                    let activeButton = null;
                     categoryButtons.forEach(btn => {
                         if (btn.onclick && btn.onclick.toString().includes(`'${category}'`)) {
                             btn.classList.add('active');
+                            activeButton = btn;
                         }
                     });
+                    
+                    // Автопрокрутка к активной кнопке
+                    if (activeButton) {
+                        scrollToActiveCategory(activeButton);
+                    }
                     
                     // Фильтруем товары
                     container.innerHTML = '';
