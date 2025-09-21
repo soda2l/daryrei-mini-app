@@ -154,6 +154,11 @@
             object-fit: contain;
         }
 
+        /* Специальные стили для стикерпаков */
+        .product-card[data-category="stickers"] .product-image {
+            background-size: 60%;
+        }
+
         .product-content {
             padding: 12px;
             display: flex;
@@ -320,20 +325,7 @@
         }
 
         .cart-item-image {
-            width: 60px;
-            height: 60px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: #ccc;
-            margin-right: 16px;
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-            object-fit: contain;
+            display: none;
         }
 
         .cart-item-info {
@@ -345,6 +337,12 @@
             font-weight: 600;
             margin-bottom: 4px;
             color: #333;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .cart-item-name:hover {
+            color: #007bff;
         }
 
         .cart-item-price {
@@ -1029,10 +1027,6 @@
                         <span class="summary-value" id="items-total">0 ₽</span>
                     </div>
                     <div class="summary-row">
-                        <span class="summary-label">Доставка:</span>
-                        <span class="summary-value" id="delivery-total">Бесплатно</span>
-                    </div>
-                    <div class="summary-row">
                         <span class="summary-label">Итого:</span>
                         <span class="summary-value" id="total-price">0 ₽</span>
                     </div>
@@ -1074,10 +1068,6 @@
                             <span class="summary-label">Товары:</span>
                             <span class="summary-value" id="checkout-items-total">0 ₽</span>
                         </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Доставка:</span>
-                            <span class="summary-value" id="checkout-delivery-total">Бесплатно</span>
-                        </div>
                         <div class="summary-row total-row">
                             <span class="summary-label">Итого:</span>
                             <span class="summary-value" id="checkout-total-price">0 ₽</span>
@@ -1089,9 +1079,6 @@
                     Отправить заказ
                 </button>
                 
-                <button class="submit-order-btn" onclick="openBotChat()" id="open-bot-btn" style="background: #28a745; margin-top: 10px;">
-                    Написать боту
-                </button>
 
                 <div class="order-info">
                     <p>📞 После отправки заказа мы свяжемся с вами в Telegram для обсуждения деталей оплаты и доставки</p>
@@ -1365,6 +1352,7 @@
         function createProductCard(product) {
             const card = document.createElement('div');
             card.className = 'product-card';
+            card.setAttribute('data-category', product.category);
             card.onclick = () => showProductModal(product.id);
             
             // Получаем первое изображение или используем эмодзи по умолчанию
@@ -1457,18 +1445,12 @@
 
             container.innerHTML = '';
             cart.forEach(item => {
-                const product = products.find(p => p.id === item.id);
-                const imageUrl = product && product.images && product.images.length > 0 ? product.images[0] : null;
-                const imageElement = imageUrl ? 
-                    `<div class="cart-item-image" style="background-image: url('${imageUrl}'); background-size: contain; background-position: center; background-repeat: no-repeat;" onerror="this.style.backgroundImage='none'; this.innerHTML='🕯️';"></div>` :
-                    `<div class="cart-item-image">🕯️</div>`;
-                
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
-                    ${imageElement}
+                    <div class="cart-item-image"></div>
                     <div class="cart-item-info">
-                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-name" onclick="showProductModal(${item.id})">${item.name}</div>
                         <div class="cart-item-price">${item.price} ₽</div>
                     </div>
                     <div class="cart-item-controls">
@@ -1518,12 +1500,9 @@
         // Обновить итоговую сумму
         function updateCartSummary() {
             const itemsTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const deliveryTotal = itemsTotal >= 2000 ? 0 : 300; // Бесплатная доставка от 2000₽
-            const total = itemsTotal + deliveryTotal;
 
             document.getElementById('items-total').textContent = `${itemsTotal} ₽`;
-            document.getElementById('delivery-total').textContent = deliveryTotal === 0 ? 'Бесплатно' : `${deliveryTotal} ₽`;
-            document.getElementById('total-price').textContent = `${total} ₽`;
+            document.getElementById('total-price').textContent = `${itemsTotal} ₽`;
         }
 
         // Перейти к оформлению заказа
@@ -1575,12 +1554,9 @@
 
             // Обновляем итоговые суммы
             const itemsSum = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const deliveryCost = itemsSum >= 2000 ? 0 : 300;
-            const total = itemsSum + deliveryCost;
 
             itemsTotal.textContent = `${itemsSum} ₽`;
-            deliveryTotal.textContent = deliveryCost === 0 ? 'Бесплатно' : `${deliveryCost} ₽`;
-            totalPrice.textContent = `${total} ₽`;
+            totalPrice.textContent = `${itemsSum} ₽`;
 
             // Очищаем предыдущие сообщения
             clearMessages();
@@ -1615,8 +1591,6 @@
         // Форматировать сообщение заказа
         function formatOrderMessage(username, comment) {
             const itemsSum = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const deliveryCost = itemsSum >= 2000 ? 0 : 300;
-            const total = itemsSum + deliveryCost;
 
             let message = `🛒 НОВЫЙ ЗАКАЗ\n\n`;
             message += `👤 Покупатель: @${username}\n\n`;
@@ -1626,8 +1600,7 @@
                 message += `• ${item.name} - ${item.quantity} шт. × ${item.price} ₽ = ${item.price * item.quantity} ₽\n`;
             });
             
-            message += `\n💰 Итого: ${total} ₽\n`;
-            message += `🚚 Доставка: ${deliveryCost === 0 ? 'Бесплатно' : deliveryCost + ' ₽'}\n`;
+            message += `\n💰 Итого: ${itemsSum} ₽\n`;
             
             if (comment) {
                 message += `\n💬 Комментарий: ${comment}\n`;
