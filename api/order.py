@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify
 from telegram import Bot
 import asyncio
 import logging
+import os
 
 app = Flask(__name__)
-bot = Bot(token="8121877943:AAEPprLrwI627XQd9Al7CQGTLvQtyopRKcE")
-ORDER_GROUP_ID = "-1003025937033"
+bot = Bot(token=os.getenv("BOT_TOKEN", "8121877943:AAEPprLrwI627XQd9Al7CQGTLvQtyopRKcE"))
+ORDER_GROUP_ID = os.getenv("ORDER_GROUP_ID", "-1003025937033")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
