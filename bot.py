@@ -70,6 +70,7 @@ class DaryReiBot:
         self.application.add_handler(CommandHandler("delete_category", self.delete_category_command))
         self.application.add_handler(CommandHandler("list_products", self.list_products_command))
         self.application.add_handler(CommandHandler("list_categories", self.list_categories_command))
+        self.application.add_handler(CommandHandler("update_catalog", self.update_catalog_command))
         
         self.application.add_handler(CallbackQueryHandler(self.button_callback))
         
@@ -386,6 +387,9 @@ class DaryReiBot:
 • /delete_category - Удалить категорию
 • /list_categories - Показать все категории
 
+🔄 <b>Обновление:</b>
+• /update_catalog - Обновить каталог в мини-приложении
+
 📊 <b>Статистика:</b>
 • Всего товаров: {products_count}
 • Всего категорий: {categories_count}"""
@@ -546,6 +550,32 @@ class DaryReiBot:
             text += f"   🆔 {category['id']}\n\n"
         
         await update.message.reply_text(text, parse_mode='HTML')
+    
+    async def update_catalog_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обновить каталог в мини-приложении"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.message.reply_text("❌ У вас нет прав доступа")
+            return
+        
+        try:
+            # Перезагружаем каталог из файла
+            self.init_catalog()
+            
+            products_count = len(self.catalog.get("products", []))
+            categories_count = len(self.catalog.get("categories", []))
+            
+            await update.message.reply_text(
+                f"✅ <b>Каталог обновлен!</b>\n\n"
+                f"📦 Товаров: {products_count}\n"
+                f"📁 Категорий: {categories_count}\n\n"
+                f"Мини-приложение теперь использует актуальный каталог.",
+                parse_mode='HTML'
+            )
+        except Exception as e:
+            logger.error(f"Ошибка при обновлении каталога: {e}")
+            await update.message.reply_text("❌ Ошибка при обновлении каталога")
     
     async def show_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Показать главное меню"""
@@ -887,13 +917,37 @@ class DaryReiBot:
                 elif context.user_data.get('waiting_for_product_photos'):
                     if message_text.lower().strip() in ['готово', 'готово!', 'завершить', 'закончить']:
                         # Завершаем добавление товара
+                        product_id = context.user_data.get('current_product_id')
+                        if product_id:
+                            # Обновляем товар в каталоге
+                            product = None
+                            for p in self.catalog.get("products", []):
+                                if p["id"] == product_id:
+                                    product = p
+                                    break
+                            
+                            if product:
+                                product["available"] = True
+                                self.save_catalog()
+                                
+                                await update.message.reply_text(
+                                    "✅ <b>Товар успешно добавлен в каталог!</b>\n\n"
+                                    f"🆔 ID: <code>{product_id}</code>\n"
+                                    f"📦 Название: {product['name']}\n"
+                                    f"💰 Цена: {product['price']} ₽\n"
+                                    f"📁 Категория: {product['category']}\n"
+                                    f"📸 Фото: {len(product.get('images', []))} шт.\n\n"
+                                    "Используйте /admin для управления каталогом",
+                                    parse_mode='HTML'
+                                )
+                            else:
+                                await update.message.reply_text("❌ Ошибка: товар не найден в каталоге")
+                        else:
+                            await update.message.reply_text("❌ Ошибка: не найден ID товара")
+                        
+                        # Очищаем состояния
                         context.user_data.pop('waiting_for_product_photos', None)
                         context.user_data.pop('current_product_id', None)
-                        await update.message.reply_text(
-                            "✅ <b>Товар успешно добавлен в каталог!</b>\n\n"
-                            "Используйте /admin для управления каталогом",
-                            parse_mode='HTML'
-                        )
                         return
                     else:
                         await update.message.reply_text(

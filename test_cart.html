@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест корзины</title>
+</head>
+<body>
+    <h1>Тест функций корзины</h1>
+    
+    <div id="cart-items"></div>
+    <button onclick="testCart()">Тест корзины</button>
+    
+    <script>
+        let cart = [];
+        
+        function testCart() {
+            // Добавляем тестовый товар
+            cart.push({
+                id: 'test_product',
+                name: 'Тестовый товар',
+                price: 1000,
+                quantity: 1
+            });
+            
+            console.log('Добавлен товар:', cart);
+            displayCart();
+        }
+        
+        function displayCart() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.innerHTML = `
+                    <div>
+                        <span>${item.name} - ${item.price}₽</span>
+                        <button onclick="changeQuantity('${item.id}', -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="changeQuantity('${item.id}', 1)">+</button>
+                        <button onclick="removeFromCart('${item.id}')">Удалить</button>
+                    </div>
+                `;
+                container.appendChild(cartItem);
+            });
+        }
+        
+        function changeQuantity(productId, change) {
+            console.log('Изменяем количество товара:', productId, 'на', change);
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    displayCart();
+                }
+            } else {
+                console.log('Товар не найден в корзине:', productId);
+            }
+        }
+        
+        function removeFromCart(productId) {
+            console.log('Удаляем товар:', productId);
+            console.log('Корзина до удаления:', cart);
+            cart = cart.filter(item => item.id !== productId);
+            console.log('Корзина после удаления:', cart);
+            displayCart();
+        }
+    </script>
+</body>
+</html>
