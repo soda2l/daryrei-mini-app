@@ -1,0 +1,96 @@
+[33meb88550[m Update index.html
+[33md9cb86d[m Delete CNAME
+[33m862ede7[m Update index.html
+[33m1eb0692[m Create CNAME
+[33m23a0669[m Update index.html
+[33m218f197[m Update index.html
+[33mee71447[m Update index.html
+[33mf396464[m Update index.html
+[33mfd81d3b[m add index
+[33m5413f91[m Delete index.html
+[33m505c855[m Update API URL to Timeweb server
+[33m6db487f[m Update index.html
+[33m7de3145[m обавлен фиксированный префикс @ для поля никнейма в Telegram
+[33m4f640fa[m браны специальные стили для стикерпаков - теперь все товары отображаются одинаково
+[33medb1826[m лучшения UI: обрезка фото стикеров и автопрокрутка категорий
+[33m9017530[m лучшения UI: убрана доставка, кнопка бота, улучшены стикерпаки, убраны фото из корзины
+[33m9b37ae6[m астройка ветки main для мини-приложения: удаление файлов бота, обновление URL, добавление README и .gitignore
+[33m1382710[m одготовка к разделению на ветки: обновление структуры проекта
+[33m25887cf[m бновлен URL API на LocalTunnel для тестирования заказов
+[33mc4a73bf[m справлен URL на рабочий Vercel API
+[33mf49fee9[m бновлен WebApp на Vercel API URL
+[33mbf4a7f8[m ереместил api.py в api/index.py для Vercel
+[33m3459994[m бъединение веток: используем наши файлы
+[33m3a6f771[m чистка: удалены лишние файлы, оставлены только нужные
+[33m39c0578[m Создан простой api.py для Vercel
+[33m2195980[m Создан render_bot.py для исправления ошибки Render
+[33m656e6e8[m одготовка для Render: обновлен requirements.txt и создан render.yaml
+[33m4c6f64d[m ернул локальный API для быстрого решения
+[33mb5013e3[m бновлен URL Vercel API на daryrei-mini-app-febg-4yd3rpjnb
+[33m1fad069[m бновлен URL Vercel API на daryrei-mini-app
+[33m2f46df3[m бновлен URL Vercel API на daryrei-mini-3i0t5z5s0
+[33m76a7e62[m справлен URL Vercel API на правильный
+[33m5dfe56b[m ернул простой vercel.json с simple_bot.py
+[33mee76f64[m справлен vercel.json и перемещен бот в api/ для правильной работы
+[33mdbc8fe3[m ринудительный редеплой Vercel
+[33mcbf5af3[m справлен бот: создан vercel_bot.py и обновлен index.html для Vercel API
+[33m8583940[m Temporarily use localhost API for testing
+[33m0cebdac[m Update WebApp with Vercel API URL
+[33m43340b6[m Add Vercel configuration
+[33mc7ec926[m Add Python bot with HTTP API for Render deployment
+[33m941360c[m Simplify for Render deployment
+[33m3f66c51[m Delete render.yaml
+[33mc335505[m Delete runtime.txt
+[33m6dd9be9[m Fix Python version for Render compatibility
+[33maaf10d5[m Delete requirements.txt
+[33mc0ba0d4[m Delete render.yaml
+[33m8af1e97[m Delete .python-version
+[33mff67eb8[m Add Python bot for Render deployment
+[33m52528d9[m Delete runtime.txt
+[33ma0ed68d[m Delete requirements.txt
+[33m6972a97[m Delete env_example.txt
+[33m5127252[m Delete bot.py
+[33m1442621[m Delete Procfile
+[33md70700e[m upload bot
+[33m45d9dbc[m Update
+[33mc90026e[m Delete index.html
+[33ma14fc5f[m new test
+[33mc54fd6f[m Delete index.html
+[33m41475e1[m test 748
+[33m2ed8420[m Delete index.html
+[33md4d02e9[m test
+[33m6ab66b9[m Delete index.html
+[33m945ffec[m test
+[33m2fb682a[m Delete index.html
+[33m20c6607[m test
+[33m8cccd9c[m Delete index.html
+[33m0e19c8d[m new
+[33mfd93c4a[m Delete index.html
+[33ma496516[m test
+[33mc36dd77[m Delete index.html
+[33m428ef82[m Update index.html
+[33mb160f4c[m new payment
+[33m26cc7d9[m Delete index.html
+[33macff599[m add payment
+[33mc53adf5[m Delete index.html
+[33m3d12059[m anim add
+[33m8b43e17[m Delete index.html
+[33m8b98cf6[m new swipes
+[33m4d94a0d[m Delete index.html
+[33m8012b0c[m add swipes
+[33mcb18849[m Delete index.html
+[33m8d52595[m add buttons
+[33m6c81a09[m Delete index.html
+[33mfd3c9d8[m Upgrade index
+[33m6e00678[m Delete index.html
+[33m1ba1be8[m html test
+[33m27fa4dd[m Delete index.html
+[33m4e16936[m new html
+[33m27ac006[m Delete index.html
+[33me638573[m add images
+[33m8ea06a2[m Delete index.html
+[33mb5db18b[m image update
+[33mf4102e3[m Delete index.html
+[33mf909c39[m MiniApp Upgrade
+[33me9fcdc1[m Delete index.html
+[33m4efc94e[m Add mini app
