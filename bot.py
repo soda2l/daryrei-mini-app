@@ -61,7 +61,6 @@ class DaryReiBot:
         self.application.add_handler(CommandHandler("test", self.test_command))
         self.application.add_handler(CommandHandler("debug", self.debug_command))
         self.application.add_handler(CommandHandler("webapp", self.webapp_test_command))
-        self.application.add_handler(CommandHandler("testwebapp", self.test_webapp_data_command))
         
         # Админские команды
         self.application.add_handler(CommandHandler("admin", self.admin_command))
