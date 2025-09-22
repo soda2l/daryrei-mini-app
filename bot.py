@@ -900,6 +900,11 @@ class DaryReiBot:
             user_id = update.effective_user.id
             logger.info(f"Получено текстовое сообщение: {message_text}")
             
+            # Проверяем, не является ли это командой
+            if message_text.startswith('/'):
+                logger.info("Игнорируем команду в текстовом обработчике")
+                return
+            
             # Проверяем админские состояния
             if self.is_admin(user_id):
                 if context.user_data.get('waiting_for_category'):
@@ -973,8 +978,19 @@ class DaryReiBot:
                     ]])
                 )
             else:
-                # Обычное сообщение - показываем меню
-                await self.show_main_menu(update, context)
+                # Обычное сообщение - игнорируем, если это не админ
+                if not self.is_admin(user_id):
+                    logger.info("Игнорируем обычное сообщение от не-админа")
+                    return
+                # Для админов показываем меню только если нет активных состояний
+                if not any([
+                    context.user_data.get('waiting_for_category'),
+                    context.user_data.get('waiting_for_product_name'),
+                    context.user_data.get('waiting_for_product_description'),
+                    context.user_data.get('waiting_for_product_price'),
+                    context.user_data.get('waiting_for_product_photos')
+                ]):
+                    await self.show_main_menu(update, context)
                 
         except Exception as e:
             logger.error(f"Ошибка при обработке текстового сообщения: {e}")
@@ -1105,23 +1121,40 @@ class DaryReiBot:
         """Обработка фото для товаров"""
         user_id = update.effective_user.id
         
+        logger.info(f"Получено фото от пользователя {user_id}")
+        
         if not self.is_admin(user_id):
+            logger.info("Пользователь не админ, игнорируем фото")
             return
         
         if not context.user_data.get('waiting_for_product_photos'):
+            logger.info("Не ожидаем фото, игнорируем")
             return
+        
+        logger.info("Начинаем обработку фото...")
         
         try:
             # Получаем фото с наилучшим качеством
             photo = update.message.photo[-1]
             file_id = photo.file_id
+            logger.info(f"File ID: {file_id}")
             
             # Получаем информацию о файле
             file_info = await context.bot.get_file(file_id)
             file_path = file_info.file_path
+            logger.info(f"File info object: {file_info}")
+            logger.info(f"File path: {file_path}")
+            logger.info(f"File path type: {type(file_path)}")
+            
+            # Проверяем, что file_path не None
+            if not file_path:
+                logger.error("File path is None")
+                await update.message.reply_text("❌ Ошибка: не удалось получить путь к файлу")
+                return
             
             # Создаем имя файла
             product_id = context.user_data.get('current_product_id')
+            logger.info(f"Product ID: {product_id}")
             if not product_id:
                 await update.message.reply_text("❌ Ошибка: не найден ID товара")
                 return
@@ -1130,27 +1163,62 @@ class DaryReiBot:
             images_dir = "images"
             if not os.path.exists(images_dir):
                 os.makedirs(images_dir)
+                logger.info(f"Создана папка: {images_dir}")
             
             # Скачиваем файл
             filename = f"{product_id}_{int(time.time())}.jpg"
             filepath = os.path.join(images_dir, filename)
+            logger.info(f"Сохраняем в: {filepath}")
             
-            # Скачиваем изображение
+            # Скачиваем изображение используя правильный URL
             import urllib.request
-            urllib.request.urlretrieve(f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}", filepath)
+            
+            # Проверяем, содержит ли file_path уже полный URL
+            if file_path.startswith('https://'):
+                download_url = file_path
+                logger.info(f"File path уже содержит полный URL: {download_url}")
+            else:
+                download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+                logger.info(f"Скачиваем фото: {download_url}")
+            
+            # Проверяем URL перед скачиванием
+            try:
+                urllib.request.urlretrieve(download_url, filepath)
+                logger.info("Фото успешно скачано")
+            except urllib.error.HTTPError as e:
+                logger.error(f"HTTP Error при скачивании: {e}")
+                # Попробуем альтернативный способ
+                try:
+                    import requests
+                    response = requests.get(download_url)
+                    if response.status_code == 200:
+                        with open(filepath, 'wb') as f:
+                            f.write(response.content)
+                        logger.info("Фото скачано через requests")
+                    else:
+                        raise Exception(f"HTTP {response.status_code}")
+                except Exception as e2:
+                    logger.error(f"Ошибка при скачивании через requests: {e2}")
+                    raise e
             
             # Добавляем фото к товару
             product = None
+            logger.info(f"Ищем товар с ID: {product_id}")
             for p in self.catalog.get("products", []):
+                logger.info(f"Проверяем товар: {p.get('id', 'Нет ID')}")
                 if p["id"] == product_id:
                     product = p
+                    logger.info(f"Найден товар: {product.get('name', 'Без названия')}")
                     break
             
             if product:
                 if "images" not in product:
                     product["images"] = []
+                    logger.info("Создан массив images для товара")
                 product["images"].append(filename)
+                logger.info(f"Добавлено фото: {filename}")
                 self.save_catalog()
+                logger.info("Каталог сохранен")
                 
                 await update.message.reply_text(
                     f"✅ Фото добавлено к товару <b>{product['name']}</b>!\n"
@@ -1159,11 +1227,18 @@ class DaryReiBot:
                     parse_mode='HTML'
                 )
             else:
+                logger.error(f"Товар с ID {product_id} не найден в каталоге")
                 await update.message.reply_text("❌ Ошибка: товар не найден")
                 
         except Exception as e:
             logger.error(f"Ошибка при обработке фото: {e}")
-            await update.message.reply_text("❌ Ошибка при обработке фото")
+            logger.error(f"Тип ошибки: {type(e).__name__}")
+            logger.error(f"Детали ошибки: {str(e)}")
+            await update.message.reply_text(
+                f"❌ Ошибка при обработке фото:\n"
+                f"Тип: {type(e).__name__}\n"
+                f"Детали: {str(e)}"
+            )
     
     async def handle_all_messages(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Универсальный обработчик для всех сообщений"""

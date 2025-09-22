@@ -192,6 +192,35 @@
       "category": "candles",
       "images": [],
       "available": true
+    },
+    {
+      "id": "тестовая_1758558922",
+      "name": "Тестовая",
+      "description": "Тестовая",
+      "price": 560,
+      "category": "candles",
+      "images": [],
+      "available": true
+    },
+    {
+      "id": "тест_1758559089",
+      "name": "Тест",
+      "description": "Тест",
+      "price": 6,
+      "category": "postcards",
+      "images": [],
+      "available": true
+    },
+    {
+      "id": "проверкакоробки_1758559336",
+      "name": "Проверкакоробки",
+      "description": "Тестим коробки",
+      "price": 1488,
+      "category": "boxes",
+      "images": [
+        "проверкакоробки_1758559336_1758559351.jpg"
+      ],
+      "available": true
     }
   ]
 }
