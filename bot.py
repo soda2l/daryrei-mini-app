@@ -61,7 +61,7 @@ class DaryReiBot:
         self.application.add_handler(CommandHandler("test", self.test_command))
         self.application.add_handler(CommandHandler("debug", self.debug_command))
         self.application.add_handler(CommandHandler("webapp", self.webapp_test_command))
-        self.application.add_handler(CommandHandler("testwebapp", self.test_webapp_data_command))
+        # self.application.add_handler(CommandHandler("testwebapp", self.test_webapp_data_command))
         
         # Админские команды
         self.application.add_handler(CommandHandler("admin", self.admin_command))
@@ -71,6 +71,8 @@ class DaryReiBot:
         self.application.add_handler(CommandHandler("delete_category", self.delete_category_command))
         self.application.add_handler(CommandHandler("list_products", self.list_products_command))
         self.application.add_handler(CommandHandler("list_categories", self.list_categories_command))
+        self.application.add_handler(CommandHandler("update_catalog", self.update_catalog_command))
+        self.application.add_handler(CommandHandler("delete_product_by_category", self.delete_product_by_category_command))
         
         self.application.add_handler(CallbackQueryHandler(self.button_callback))
         
@@ -84,7 +86,7 @@ class DaryReiBot:
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text_message))
         
         # Универсальный обработчик для всех сообщений (для отладки) - последний
-        self.application.add_handler(MessageHandler(filters.ALL, self.handle_all_messages))
+        # self.application.add_handler(MessageHandler(filters.ALL, self.handle_all_messages))
     
     def setup_error_handlers(self):
         """Настройка обработчиков ошибок"""
@@ -300,10 +302,12 @@ class DaryReiBot:
 /admin - Админ-панель
 /add_product - Добавить товар
 /delete_product - Удалить товар
+/delete_product_by_category - Удалить товары по категории
 /add_category - Добавить категорию
 /delete_category - Удалить категорию
 /list_products - Показать все товары
-/list_categories - Показать все категории"""
+/list_categories - Показать все категории
+/update_catalog - Обновить каталог"""
         
         await update.message.reply_text(help_text)
     
@@ -697,6 +701,8 @@ class DaryReiBot:
         # Админские кнопки
         elif data == "admin_cancel":
             await query.edit_message_text("❌ Операция отменена")
+        elif data == "cancel":
+            await query.edit_message_text("❌ Операция отменена")
         elif data.startswith("add_product_category_"):
             category_id = data.replace("add_product_category_", "")
             await self.handle_add_product_category(update, context, category_id)
@@ -706,6 +712,9 @@ class DaryReiBot:
         elif data.startswith("delete_category_"):
             category_id = data.replace("delete_category_", "")
             await self.handle_delete_category(update, context, category_id)
+        elif data.startswith("delete_category_products_"):
+            category_id = data.replace("delete_category_products_", "")
+            await self.handle_delete_category_products(update, context, category_id)
     
     # ========== ОБРАБОТЧИКИ АДМИНСКИХ ДЕЙСТВИЙ ==========
     
@@ -782,6 +791,62 @@ class DaryReiBot:
             )
         else:
             await update.callback_query.edit_message_text("❌ Ошибка при удалении категории")
+    
+    async def handle_delete_category_products(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
+        """Обработка удаления товаров по категории"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        try:
+            # Находим категорию
+            category = None
+            for c in self.catalog.get("categories", []):
+                if c["id"] == category_id:
+                    category = c
+                    break
+            
+            if not category:
+                await update.callback_query.edit_message_text("❌ Категория не найдена")
+                return
+            
+            # Получаем товары этой категории
+            products_in_category = [
+                p for p in self.catalog.get("products", []) 
+                if p.get("category") == category_id
+            ]
+            
+            if not products_in_category:
+                await update.callback_query.edit_message_text(
+                    f"ℹ️ В категории <b>{category['name']}</b> нет товаров",
+                    parse_mode='HTML'
+                )
+                return
+            
+            # Создаем кнопки для выбора товаров
+            keyboard = []
+            for product in products_in_category:
+                keyboard.append([InlineKeyboardButton(
+                    f"🗑️ {product['name']} - {product['price']}₽", 
+                    callback_data=f"delete_product_{product['id']}"
+                )])
+            
+            keyboard.append([InlineKeyboardButton("❌ Отмена", callback_data="cancel")])
+            
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.callback_query.edit_message_text(
+                f"🗂️ <b>Товары в категории '{category['name']}':</b>\n\n"
+                f"Выберите товар для удаления:",
+                reply_markup=reply_markup,
+                parse_mode='HTML'
+            )
+            
+        except Exception as e:
+            logger.error(f"Ошибка при получении товаров категории: {e}")
+            await update.callback_query.edit_message_text(f"❌ Ошибка: {e}")
     
     async def handle_web_app_data(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработчик данных от WebApp"""
@@ -867,6 +932,10 @@ class DaryReiBot:
             user_id = update.effective_user.id
             logger.info(f"Получено текстовое сообщение: {message_text}")
             
+            # Игнорируем команды (они обрабатываются отдельными обработчиками)
+            if message_text.startswith('/'):
+                return
+            
             # Проверяем админские состояния
             if self.is_admin(user_id):
                 if context.user_data.get('waiting_for_category'):
@@ -897,6 +966,10 @@ class DaryReiBot:
                             "📸 Отправьте фото товара или напишите 'готово' для завершения"
                         )
                         return
+                else:
+                    # Админ без активных состояний - показываем меню
+                    await self.show_main_menu(update, context)
+                    return
             
             # Проверяем, не является ли это заказом (начинается с "🛒 НОВЫЙ ЗАКАЗ")
             if message_text.startswith("🛒 НОВЫЙ ЗАКАЗ"):
@@ -1079,8 +1152,37 @@ class DaryReiBot:
             filepath = os.path.join(images_dir, filename)
             
             # Скачиваем изображение
-            import urllib.request
-            urllib.request.urlretrieve(f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}", filepath)
+            logger.info(f"Product ID: {product_id}")
+            logger.info(f"Сохраняем в: {filepath}")
+            
+            # Проверяем, содержит ли file_path уже полный URL
+            if file_path.startswith('https://'):
+                download_url = file_path
+                logger.info(f"Скачиваем фото: {download_url}")
+            else:
+                download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+                logger.info(f"Скачиваем фото: {download_url}")
+            
+            try:
+                import urllib.request
+                urllib.request.urlretrieve(download_url, filepath)
+                logger.info(f"Фото успешно скачано: {filepath}")
+            except Exception as urllib_error:
+                logger.error(f"HTTP Error при скачивании: {urllib_error}")
+                # Fallback на requests
+                try:
+                    import requests
+                    response = requests.get(download_url)
+                    if response.status_code == 200:
+                        with open(filepath, 'wb') as f:
+                            f.write(response.content)
+                        logger.info(f"Фото скачано через requests: {filepath}")
+                    else:
+                        logger.error(f"Ошибка при скачивании через requests: HTTP {response.status_code}")
+                        raise Exception(f"HTTP {response.status_code}")
+                except Exception as requests_error:
+                    logger.error(f"Ошибка при скачивании через requests: {requests_error}")
+                    raise urllib_error
             
             # Добавляем фото к товару
             product = None
@@ -1147,6 +1249,60 @@ class DaryReiBot:
                 )
             except Exception as e:
                 logger.error(f"Не удалось отправить сообщение об ошибке: {e}")
+    
+    async def update_catalog_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Команда для обновления каталога"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.message.reply_text("❌ У вас нет прав доступа к этой команде")
+            return
+        
+        try:
+            # Перезагружаем каталог из файла
+            self.load_catalog()
+            await update.message.reply_text("✅ Каталог успешно обновлен!")
+        except Exception as e:
+            logger.error(f"Ошибка при обновлении каталога: {e}")
+            await update.message.reply_text(f"❌ Ошибка при обновлении каталога: {e}")
+    
+    async def delete_product_by_category_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Команда для удаления товаров по категории"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.message.reply_text("❌ У вас нет прав доступа к этой команде")
+            return
+        
+        try:
+            catalog = self.get_catalog()
+            categories = catalog.get('categories', [])
+            
+            if not categories:
+                await update.message.reply_text("❌ В каталоге нет категорий")
+                return
+            
+            # Создаем кнопки для выбора категории
+            keyboard = []
+            for category in categories:
+                keyboard.append([InlineKeyboardButton(
+                    f"🗂️ {category['name']}", 
+                    callback_data=f"delete_category_products_{category['id']}"
+                )])
+            
+            keyboard.append([InlineKeyboardButton("❌ Отмена", callback_data="cancel")])
+            
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(
+                "🗂️ <b>Выберите категорию для удаления товаров:</b>",
+                reply_markup=reply_markup,
+                parse_mode='HTML'
+            )
+            
+        except Exception as e:
+            logger.error(f"Ошибка при получении категорий: {e}")
+            await update.message.reply_text(f"❌ Ошибка: {e}")
     
     def run(self):
         """Запуск бота"""
