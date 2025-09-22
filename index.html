@@ -1562,11 +1562,11 @@
                         <div class="cart-item-price">${item.price} ₽</div>
                     </div>
                     <div class="cart-item-controls">
-                        <button class="quantity-btn" onclick="changeQuantity(${item.id}, -1)" 
+                        <button class="quantity-btn" onclick="event.stopPropagation(); changeQuantity('${item.id}', -1)" 
                                 ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
                         <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="changeQuantity(${item.id}, 1)">+</button>
-                        <button class="remove-btn" onclick="removeFromCart(${item.id})">Удалить</button>
+                        <button class="quantity-btn" onclick="event.stopPropagation(); changeQuantity('${item.id}', 1)">+</button>
+                        <button class="remove-btn" onclick="event.stopPropagation(); removeFromCart('${item.id}')">Удалить</button>
                     </div>
                 `;
                 container.appendChild(cartItem);
@@ -1584,6 +1584,7 @@
 
         // Изменить количество товара
         function changeQuantity(productId, change) {
+            console.log('Изменяем количество товара:', productId, 'на', change);
             const item = cart.find(item => item.id === productId);
             if (item) {
                 item.quantity += change;
@@ -1594,12 +1595,17 @@
                     updateCartCount();
                     displayCart();
                 }
+            } else {
+                console.log('Товар не найден в корзине:', productId);
             }
         }
 
         // Удалить товар из корзины
         function removeFromCart(productId) {
+            console.log('Удаляем товар:', productId);
+            console.log('Корзина до удаления:', cart);
             cart = cart.filter(item => item.id !== productId);
+            console.log('Корзина после удаления:', cart);
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartCount();
             displayCart();
@@ -1982,8 +1988,8 @@
             document.getElementById('modal-description').textContent = product.description;
             
             const addBtn = document.getElementById('modal-add-btn');
-            addBtn.disabled = !product.inStock;
-            addBtn.textContent = !product.inStock ? 'Нет в наличии' : 'В корзину';
+            addBtn.disabled = !product.available;
+            addBtn.textContent = !product.available ? 'Нет в наличии' : 'В корзину';
             addBtn.onclick = () => addToCartFromModal(productId);
             
             modal.classList.remove('hidden');
