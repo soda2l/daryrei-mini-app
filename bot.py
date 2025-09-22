@@ -66,6 +66,7 @@ class DaryReiBot:
         self.application.add_handler(CommandHandler("admin", self.admin_command))
         self.application.add_handler(CommandHandler("add_product", self.add_product_command))
         self.application.add_handler(CommandHandler("delete_product", self.delete_product_command))
+        self.application.add_handler(CommandHandler("delete_product_by_category", self.delete_product_by_category_command))
         self.application.add_handler(CommandHandler("add_category", self.add_category_command))
         self.application.add_handler(CommandHandler("delete_category", self.delete_category_command))
         self.application.add_handler(CommandHandler("list_products", self.list_products_command))
@@ -379,7 +380,8 @@ class DaryReiBot:
 
 📦 <b>Управление товарами:</b>
 • /add_product - Добавить товар
-• /delete_product - Удалить товар
+• /delete_product - Удалить товар (все)
+• /delete_product_by_category - Удалить товар (по категории)
 • /list_products - Показать все товары
 
 📁 <b>Управление категориями:</b>
@@ -449,6 +451,37 @@ class DaryReiBot:
             keyboard.append([InlineKeyboardButton(
                 f"❌ {product['name']} ({product['price']} ₽)", 
                 callback_data=f"delete_product_{product['id']}"
+            )])
+        
+        keyboard.append([InlineKeyboardButton("❌ Отмена", callback_data="admin_cancel")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def delete_product_by_category_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Удалить товар по категории"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.message.reply_text("❌ У вас нет прав доступа")
+            return
+        
+        categories = self.catalog.get("categories", [])
+        if not categories:
+            await update.message.reply_text("❌ В каталоге нет категорий")
+            return
+        
+        text = "🗑️ <b>Удаление товара по категории</b>\n\nВыберите категорию:"
+        keyboard = []
+        
+        for category in categories:
+            # Подсчитываем количество товаров в категории
+            products_in_category = [p for p in self.catalog.get("products", []) if p.get("category") == category["id"]]
+            count = len(products_in_category)
+            
+            keyboard.append([InlineKeyboardButton(
+                f"📁 {category['name']} ({count} товаров)", 
+                callback_data=f"delete_category_products_{category['id']}"
             )])
         
         keyboard.append([InlineKeyboardButton("❌ Отмена", callback_data="admin_cancel")])
@@ -736,6 +769,9 @@ class DaryReiBot:
         elif data.startswith("delete_product_"):
             product_id = data.replace("delete_product_", "")
             await self.handle_delete_product(update, context, product_id)
+        elif data.startswith("delete_category_products_"):
+            category_id = data.replace("delete_category_products_", "")
+            await self.handle_delete_category_products(update, context, category_id)
         elif data.startswith("delete_category_"):
             category_id = data.replace("delete_category_", "")
             await self.handle_delete_category(update, context, category_id)
@@ -787,6 +823,46 @@ class DaryReiBot:
             )
         else:
             await update.callback_query.edit_message_text("❌ Ошибка при удалении товара")
+    
+    async def handle_delete_category_products(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
+        """Обработка удаления товаров по категории"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим категорию
+        category = None
+        for c in self.catalog.get("categories", []):
+            if c["id"] == category_id:
+                category = c
+                break
+        
+        if not category:
+            await update.callback_query.edit_message_text("❌ Категория не найдена")
+            return
+        
+        # Находим товары в категории
+        products_in_category = [p for p in self.catalog.get("products", []) if p.get("category") == category_id]
+        
+        if not products_in_category:
+            await update.callback_query.edit_message_text(f"❌ В категории <b>{category['name']}</b> нет товаров", parse_mode='HTML')
+            return
+        
+        text = f"🗑️ <b>Удаление товаров из категории: {category['name']}</b>\n\nВыберите товар для удаления:"
+        keyboard = []
+        
+        for product in products_in_category:
+            keyboard.append([InlineKeyboardButton(
+                f"❌ {product['name']} ({product['price']} ₽)", 
+                callback_data=f"delete_product_{product['id']}"
+            )])
+        
+        keyboard.append([InlineKeyboardButton("❌ Отмена", callback_data="admin_cancel")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
     async def handle_delete_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
         """Обработка удаления категории"""
