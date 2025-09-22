@@ -1160,8 +1160,8 @@
         let touchEndX = 0;
         let touchEndY = 0;
         
-        // Категории для свайпов
-        const categories = ['all', 'candles', 'boxes', 'postcards', 'stickers', 'home'];
+        // Категории для свайпов (загружаются из каталога)
+        let categories = ['all']; // 'all' всегда первая категория
 
         // Инициализация Telegram WebApp
         if (window.Telegram?.WebApp) {
@@ -1181,6 +1181,18 @@
                 }
                 catalog = await response.json();
                 products = catalog.products || [];
+                
+                // Загружаем категории из каталога
+                if (catalog.categories && catalog.categories.length > 0) {
+                    categories = ['all']; // 'all' всегда первая категория
+                    catalog.categories.forEach(category => {
+                        categories.push(category.id);
+                    });
+                    console.log('Категории загружены из каталога:', categories);
+                } else {
+                    console.log('В каталоге нет категорий, используем fallback');
+                }
+                
                 console.log('Каталог загружен:', catalog);
                 initializeApp();
             } catch (error) {
@@ -1322,6 +1334,15 @@
                 ]
             };
             products = catalog.products;
+            
+            // Загружаем категории из fallback данных
+            if (catalog.categories && catalog.categories.length > 0) {
+                categories = ['all']; // 'all' всегда первая категория
+                catalog.categories.forEach(category => {
+                    categories.push(category.id);
+                });
+                console.log('Категории загружены из fallback данных:', categories);
+            }
         }
 
         // Инициализация приложения
