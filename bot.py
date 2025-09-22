@@ -84,7 +84,7 @@ class DaryReiBot:
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text_message))
         
         # Универсальный обработчик для всех сообщений (для отладки) - последний
-        self.application.add_handler(MessageHandler(filters.ALL, self.handle_all_messages))
+        # self.application.add_handler(MessageHandler(filters.ALL, self.handle_all_messages))
     
     def setup_error_handlers(self):
         """Настройка обработчиков ошибок"""

@@ -33,7 +33,9 @@
       "category": "candles",
       "price": 1290,
       "description": "Теплый аромат банана с нотками шоколада",
-      "images": ["candle_банан_шоколад.jpg"],
+      "images": [
+        "candle_банан_шоколад.jpg"
+      ],
       "available": true
     },
     {
@@ -42,7 +44,9 @@
       "category": "candles",
       "price": 1290,
       "description": "Свежий аромат клюквы с лесными нотами",
-      "images": ["candle_клюквенный_лес.jpg"],
+      "images": [
+        "candle_клюквенный_лес.jpg"
+      ],
       "available": true
     },
     {
@@ -51,7 +55,9 @@
       "category": "candles",
       "price": 1290,
       "description": "Пряный аромат мандарина с теплыми нотами корицы",
-      "images": ["candle_мандарин_корица.jpg"],
+      "images": [
+        "candle_мандарин_корица.jpg"
+      ],
       "available": true
     },
     {
@@ -60,7 +66,9 @@
       "category": "candles",
       "price": 1290,
       "description": "Осенний аромат тыквы с пряными нотами корицы",
-      "images": ["candle_тыква_корица.jpg"],
+      "images": [
+        "candle_тыква_корица.jpg"
+      ],
       "available": true
     },
     {
@@ -69,7 +77,9 @@
       "category": "candles",
       "price": 1290,
       "description": "Нежный аромат цветов с нотками свежести после дождя",
-      "images": ["candle_цветы_дождь.jpg"],
+      "images": [
+        "candle_цветы_дождь.jpg"
+      ],
       "available": true
     },
     {
@@ -78,7 +88,12 @@
       "category": "boxes",
       "price": 1900,
       "description": "Подарочная коробка с волшебным дизайном",
-      "images": ["box_волшебная_1.jpg", "box_волшебная_2.jpg", "box_волшебная_3.jpg", "box_волшебная_4.jpg"],
+      "images": [
+        "box_волшебная_1.jpg",
+        "box_волшебная_2.jpg",
+        "box_волшебная_3.jpg",
+        "box_волшебная_4.jpg"
+      ],
       "available": true
     },
     {
@@ -87,7 +102,16 @@
       "category": "postcards",
       "price": 120,
       "description": "Поздравительная открытка с дизайном Dary Rey",
-      "images": ["postcard_dary_rey_1.jpg", "postcard_dary_rey_2.jpg", "postcard_dary_rey_3.jpg", "postcard_dary_rey_4.jpg", "postcard_dary_rey_5.jpg", "postcard_dary_rey_6.jpg", "postcard_dary_rey_7.jpg", "postcard_dary_rey_8.jpg"],
+      "images": [
+        "postcard_dary_rey_1.jpg",
+        "postcard_dary_rey_2.jpg",
+        "postcard_dary_rey_3.jpg",
+        "postcard_dary_rey_4.jpg",
+        "postcard_dary_rey_5.jpg",
+        "postcard_dary_rey_6.jpg",
+        "postcard_dary_rey_7.jpg",
+        "postcard_dary_rey_8.jpg"
+      ],
       "available": true
     },
     {
@@ -96,7 +120,9 @@
       "category": "stickers",
       "price": 360,
       "description": "Наклейка с изображением дома",
-      "images": ["sticker_home.jpg"],
+      "images": [
+        "sticker_home.jpg"
+      ],
       "available": true
     },
     {
@@ -105,7 +131,9 @@
       "category": "stickers",
       "price": 360,
       "description": "Наклейка с логотипом Rey",
-      "images": ["sticker_rey.jpg"],
+      "images": [
+        "sticker_rey.jpg"
+      ],
       "available": true
     },
     {
@@ -114,7 +142,9 @@
       "category": "stickers",
       "price": 390,
       "description": "Наклейка с надписью \"Душевное тепло\"",
-      "images": ["sticker_душевное_тепло.jpg"],
+      "images": [
+        "sticker_душевное_тепло.jpg"
+      ],
       "available": true
     },
     {
@@ -123,7 +153,9 @@
       "category": "stickers",
       "price": 390,
       "description": "Наклейка с надписью \"Релакс\"",
-      "images": ["sticker_релакс.jpg"],
+      "images": [
+        "sticker_релакс.jpg"
+      ],
       "available": true
     },
     {
@@ -132,7 +164,9 @@
       "category": "stickers",
       "price": 390,
       "description": "Наклейка с надписью \"Созидание\"",
-      "images": ["sticker_созидание.jpg"],
+      "images": [
+        "sticker_созидание.jpg"
+      ],
       "available": true
     },
     {
@@ -141,7 +175,22 @@
       "category": "home",
       "price": 2200,
       "description": "Ловец снов ручной работы для защиты от плохих снов",
-      "images": ["home_ловец_снов_1.jpg", "home_ловец_снов_2.jpg", "home_ловец_снов_3.jpg", "home_ловец_снов_4.jpg", "home_ловец_снов_5.jpg"],
+      "images": [
+        "home_ловец_снов_1.jpg",
+        "home_ловец_снов_2.jpg",
+        "home_ловец_снов_3.jpg",
+        "home_ловец_снов_4.jpg",
+        "home_ловец_снов_5.jpg"
+      ],
+      "available": true
+    },
+    {
+      "id": "тест_1758558238",
+      "name": "Тест",
+      "description": "Привет",
+      "price": 6,
+      "category": "candles",
+      "images": [],
       "available": true
     }
   ]
