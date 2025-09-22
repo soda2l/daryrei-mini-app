@@ -1174,13 +1174,30 @@
 
         // Загрузка каталога с сервера
         async function loadCatalog() {
+            console.log('🔄 Начинаем загрузку каталога...');
+            
+            // Создаем таймаут для быстрого переключения на fallback
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Timeout')), 5000); // 5 секунд
+            });
+            
             try {
-                const response = await fetch('https://daryreibot.duckdns.org/api/catalog');
+                console.log('📡 Отправляем запрос к серверу...');
+                const fetchPromise = fetch('https://daryreibot.duckdns.org/api/catalog');
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
+                
+                console.log('📡 Получен ответ от сервера:', response.status);
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
+                console.log('📦 Парсим JSON ответ...');
                 catalog = await response.json();
+                console.log('📦 Каталог распарсен:', catalog);
+                
                 products = catalog.products || [];
+                console.log('📦 Товары загружены:', products.length);
                 
                 // Загружаем категории из каталога
                 if (catalog.categories && catalog.categories.length > 0) {
@@ -1188,15 +1205,16 @@
                     catalog.categories.forEach(category => {
                         categories.push(category.id);
                     });
-                    console.log('Категории загружены из каталога:', categories);
+                    console.log('📁 Категории загружены из каталога:', categories);
                 } else {
-                    console.log('В каталоге нет категорий, используем fallback');
+                    console.log('⚠️ В каталоге нет категорий, используем fallback');
                 }
                 
-                console.log('Каталог загружен:', catalog);
+                console.log('✅ Каталог успешно загружен');
                 initializeApp();
             } catch (error) {
-                console.error('Ошибка загрузки каталога:', error);
+                console.error('❌ Ошибка загрузки каталога:', error);
+                console.log('🔄 Переключаемся на fallback данные...');
                 // Fallback на статические данные
                 loadFallbackData();
                 initializeApp();
@@ -1347,6 +1365,10 @@
 
         // Инициализация приложения
         function initializeApp() {
+            console.log('🚀 Инициализируем приложение...');
+            console.log('📦 Товаров для отображения:', products.length);
+            console.log('📁 Категорий:', categories.length);
+            
             displayFeaturedProducts();
             updateCartCount();
             
@@ -1361,6 +1383,8 @@
             
             // Настраиваем поле никнейма
             setupUsernameInput();
+            
+            console.log('✅ Приложение инициализировано');
         }
 
         // Инициализация
