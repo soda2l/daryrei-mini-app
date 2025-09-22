@@ -1,0 +1,9 @@
+@echo off
+echo Копируем bot.py на сервер...
+scp bot.py root@daryreibot.duckdns.org:/var/www/daryrei-bot/
+echo Перезапускаем бота на сервере...
+ssh root@daryreibot.duckdns.org "systemctl restart daryrei-bot"
+echo Проверяем статус...
+ssh root@daryreibot.duckdns.org "systemctl status daryrei-bot --no-pager"
+echo Готово!
+pause
