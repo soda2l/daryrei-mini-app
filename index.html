@@ -756,7 +756,7 @@
 
         /* Анимация галереи */
         .gallery-slide {
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
         }
 
         /* Стили для страницы оформления заказа */
@@ -2092,6 +2092,9 @@
                 return;
             }
             
+            // Предзагружаем все изображения
+            preloadAllImages();
+            
             // Показываем/скрываем кнопки навигации
             galleryPrev.style.display = currentProductImages.length > 1 ? 'flex' : 'none';
             galleryNext.style.display = currentProductImages.length > 1 ? 'flex' : 'none';
@@ -2111,6 +2114,35 @@
             
             // Показываем первое изображение
             showCurrentImage();
+        }
+
+        // Предзагрузить все изображения товара
+        function preloadAllImages() {
+            if (currentProductImages.length <= 1) return;
+            
+            console.log('🔄 Предзагружаем изображения товара...');
+            
+            currentProductImages.forEach((imageName, index) => {
+                const img = new Image();
+                let imageUrl = imageName;
+                
+                // Обрабатываем URL изображения
+                if (!imageUrl.startsWith('http')) {
+                    imageUrl = `https://daryreibot.duckdns.org/images/${imageUrl}`;
+                }
+                
+                img.onload = () => {
+                    console.log(`✅ Изображение ${index + 1}/${currentProductImages.length} загружено: ${imageName}`);
+                };
+                
+                img.onerror = () => {
+                    console.log(`❌ Ошибка загрузки изображения ${index + 1}: ${imageName}`);
+                };
+                
+                img.src = imageUrl;
+            });
+            
+            console.log('✅ Предзагрузка изображений завершена');
         }
 
         // Показать текущее изображение
@@ -2151,6 +2183,9 @@
             
             // Анимация смены изображения
             const galleryImage = document.getElementById('gallery-image');
+            
+            // Убираем transition для мгновенного изменения
+            galleryImage.style.transition = 'none';
             galleryImage.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
             galleryImage.style.opacity = '0';
             
@@ -2165,10 +2200,11 @@
                 
                 showCurrentImage();
                 
-                // Анимация появления нового изображения
+                // Восстанавливаем transition и анимируем появление
+                galleryImage.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
                 galleryImage.style.transform = 'translateX(0)';
                 galleryImage.style.opacity = '1';
-            }, 200);
+            }, 150);
         }
 
         // Перейти к конкретному изображению
