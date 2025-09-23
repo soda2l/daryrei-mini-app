@@ -864,6 +864,8 @@ class DaryReiBot:
             await self.handle_add_photos(update, context)
         elif data == "finish_product":
             await self.handle_finish_product(update, context)
+        elif data == "cancel_add_product":
+            await self.handle_cancel_add_product(update, context)
         elif data.startswith("add_product_category_"):
             category_id = data.replace("add_product_category_", "")
             await self.handle_add_product_category(update, context, category_id)
@@ -1143,7 +1145,7 @@ class DaryReiBot:
         text = "📸 <b>Добавление фото</b>\n\nОтправьте изображения для товара:"
         keyboard = [
             [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
-            [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+            [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1151,6 +1153,29 @@ class DaryReiBot:
         
         # Устанавливаем состояние ожидания фото
         context.user_data['waiting_for_product_photos'] = True
+    
+    async def handle_cancel_add_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Отмена добавления товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Очищаем все данные о добавлении товара
+        context.user_data.pop('waiting_for_product_name', None)
+        context.user_data.pop('waiting_for_product_description', None)
+        context.user_data.pop('waiting_for_product_price', None)
+        context.user_data.pop('waiting_for_product_photos', None)
+        context.user_data.pop('current_product_id', None)
+        context.user_data.pop('selected_category', None)
+        context.user_data.pop('product_name', None)
+        context.user_data.pop('product_description', None)
+        context.user_data.pop('product_price', None)
+        context.user_data.pop('product_images', None)
+        
+        # Возвращаемся в меню управления товарами
+        await self.show_admin_products_menu(update, context)
     
     async def handle_finish_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Завершение добавления товара"""
@@ -1251,7 +1276,7 @@ class DaryReiBot:
         context.user_data['waiting_for_product_name'] = True
         
         text = "📦 <b>Добавление товара</b>\n\nОтправьте название товара:"
-        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+        keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
@@ -1345,10 +1370,10 @@ class DaryReiBot:
             ]
             
             if not products_in_category:
-                await update.callback_query.edit_message_text(
+            await update.callback_query.edit_message_text(
                     f"ℹ️ В категории <b>{category['name']}</b> нет товаров",
-                    parse_mode='HTML'
-                )
+                parse_mode='HTML'
+            )
                 return
             
             # Создаем кнопки для выбора товаров
@@ -1504,7 +1529,7 @@ class DaryReiBot:
                 else:
                     # Админ без активных состояний - показываем меню
                     await self.show_main_menu(update, context)
-                    return
+                        return
             
             # Проверяем, не является ли это заказом (начинается с "🛒 НОВЫЙ ЗАКАЗ")
             if message_text.startswith("🛒 НОВЫЙ ЗАКАЗ"):
@@ -1536,7 +1561,7 @@ class DaryReiBot:
     async def handle_category_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
         """Обработка ввода категории"""
         try:
-            name = message_text.strip()
+                name = message_text.strip()
             
             if not name:
                 text = "❌ <b>Добавление категории</b>\n\nНазвание категории не может быть пустым"
@@ -1589,7 +1614,7 @@ class DaryReiBot:
         """Обработка ввода названия товара"""
         if not message_text.strip():
             text = "❌ <b>Добавление товара</b>\n\nНазвание товара не может быть пустым"
-            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+            keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
             return
@@ -1611,7 +1636,7 @@ class DaryReiBot:
         context.user_data['waiting_for_product_price'] = True
         
         text = "💰 <b>Добавление товара</b>\n\nОтправьте цену товара (только число):"
-        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+        keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
@@ -1622,7 +1647,7 @@ class DaryReiBot:
             price = int(message_text.strip())
             if price <= 0:
                 text = "❌ <b>Добавление товара</b>\n\nЦена должна быть больше 0"
-                keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+                keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                 return
@@ -1722,7 +1747,7 @@ class DaryReiBot:
                 logger.info(f"Скачиваем фото: {download_url}")
             
             try:
-                import urllib.request
+            import urllib.request
                 urllib.request.urlretrieve(download_url, filepath)
                 logger.info(f"Фото успешно скачано: {filepath}")
             except Exception as urllib_error:
