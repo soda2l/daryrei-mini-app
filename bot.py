@@ -1227,12 +1227,15 @@ class DaryReiBot:
         
         # Удаляем товар
         if self.delete_product(product_id):
-            await update.callback_query.edit_message_text(
-                f"✅ Товар <b>{product['name']}</b> успешно удален",
-                parse_mode='HTML'
-            )
+            text = f"✅ <b>Товар удален!</b>\n\n📦 <b>{product['name']}</b>\n\nВозвращаемся в меню управления товарами..."
+            keyboard = [[InlineKeyboardButton("📦 Управление товарами", callback_data="admin_products")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
         else:
-            await update.callback_query.edit_message_text("❌ Ошибка при удалении товара")
+            text = "❌ <b>Ошибка при удалении товара</b>\n\nВозвращаемся в меню управления товарами..."
+            keyboard = [[InlineKeyboardButton("📦 Управление товарами", callback_data="admin_products")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
     async def handle_delete_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
         """Обработка удаления категории"""
@@ -1255,12 +1258,15 @@ class DaryReiBot:
         
         # Удаляем категорию
         if self.delete_category(category_id):
-            await update.callback_query.edit_message_text(
-                f"✅ Категория <b>{category['name']}</b> и все товары в ней успешно удалены",
-                parse_mode='HTML'
-            )
+            text = f"✅ <b>Категория удалена!</b>\n\n📁 <b>{category['name']}</b>\n\nВозвращаемся в меню управления категориями..."
+            keyboard = [[InlineKeyboardButton("📁 Управление категориями", callback_data="admin_categories")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
         else:
-            await update.callback_query.edit_message_text("❌ Ошибка при удалении категории")
+            text = "❌ <b>Ошибка при удалении категории</b>\n\nВозвращаемся в меню управления категориями..."
+            keyboard = [[InlineKeyboardButton("📁 Управление категориями", callback_data="admin_categories")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
     async def handle_delete_category_products(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
         """Обработка удаления товаров по категории"""
@@ -1699,12 +1705,20 @@ class DaryReiBot:
                 product["images"].append(filename)
                 self.save_catalog()
                 
-                await update.message.reply_text(
-                    f"✅ Фото добавлено к товару <b>{product['name']}</b>!\n"
-                    f"📸 Всего фото: {len(product['images'])}\n\n"
-                    f"Отправьте еще фото или напишите 'готово' для завершения",
-                    parse_mode='HTML'
-                )
+                text = f"""✅ <b>Фото добавлено!</b>
+
+📦 <b>{product['name']}</b>
+📸 Всего фото: {len(product['images'])}
+
+Отправьте еще фото или нажмите 'Готово' для завершения"""
+                
+                keyboard = [
+                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+                    [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
             else:
                 await update.message.reply_text("❌ Ошибка: товар не найден")
                 
