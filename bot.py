@@ -8,7 +8,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppI
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 import os
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import threading
 import time
@@ -71,6 +71,7 @@ class DaryReiBot:
         self.application.add_handler(CommandHandler("delete_category", self.delete_category_command))
         self.application.add_handler(CommandHandler("list_products", self.list_products_command))
         self.application.add_handler(CommandHandler("list_categories", self.list_categories_command))
+        self.application.add_handler(CommandHandler("reset", self.reset_command))
         self.application.add_handler(CommandHandler("update_catalog", self.update_catalog_command))
         self.application.add_handler(CommandHandler("delete_product_by_category", self.delete_product_by_category_command))
         
@@ -175,6 +176,14 @@ class DaryReiBot:
                 response = jsonify({"error": str(e)})
                 response.headers.add('Access-Control-Allow-Origin', '*')
                 return response, 500
+        
+        @flask_app.route('/images/<path:filename>')
+        def serve_image(filename):
+            """Сервер для статических изображений"""
+            try:
+                return send_from_directory('images', filename)
+            except FileNotFoundError:
+                return "Image not found", 404
     
     def run_flask(self):
         """Запуск Flask API в отдельном потоке"""
@@ -387,6 +396,9 @@ class DaryReiBot:
 • /delete_category - Удалить категорию
 • /list_categories - Показать все категории
 
+🔧 <b>Утилиты:</b>
+• /reset - Сбросить состояния
+
 📊 <b>Статистика:</b>
 • Всего товаров: {products_count}
 • Всего категорий: {categories_count}"""
@@ -396,7 +408,33 @@ class DaryReiBot:
         
         text = text.format(products_count=products_count, categories_count=categories_count)
         
-        await update.message.reply_text(text, parse_mode='HTML')
+        # Добавляем кнопки для быстрого доступа
+        keyboard = [
+            [InlineKeyboardButton("🔄 Сбросить состояния", callback_data="admin_reset")],
+            [InlineKeyboardButton("📦 Добавить товар", callback_data="admin_add_product")],
+            [InlineKeyboardButton("📁 Добавить категорию", callback_data="admin_add_category")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def reset_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Сброс состояний админа"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.message.reply_text("❌ У вас нет прав доступа")
+            return
+        
+        # Очищаем все состояния ожидания
+        context.user_data.clear()
+        
+        await update.message.reply_text(
+            "✅ <b>Состояния сброшены</b>\n\n"
+            "Все активные процессы добавления товаров/категорий отменены.\n"
+            "Используйте /admin для управления каталогом.",
+            parse_mode='HTML'
+        )
     
     async def add_product_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Добавить товар"""
@@ -703,6 +741,12 @@ class DaryReiBot:
             await query.edit_message_text("❌ Операция отменена")
         elif data == "cancel":
             await query.edit_message_text("❌ Операция отменена")
+        elif data == "admin_reset":
+            await self.handle_admin_reset(update, context)
+        elif data == "admin_add_product":
+            await self.add_product_command(update, context)
+        elif data == "admin_add_category":
+            await self.add_category_command(update, context)
         elif data.startswith("add_product_category_"):
             category_id = data.replace("add_product_category_", "")
             await self.handle_add_product_category(update, context, category_id)
@@ -717,6 +761,24 @@ class DaryReiBot:
             await self.handle_delete_category_products(update, context, category_id)
     
     # ========== ОБРАБОТЧИКИ АДМИНСКИХ ДЕЙСТВИЙ ==========
+    
+    async def handle_admin_reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка сброса состояний через кнопку"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Очищаем все состояния ожидания
+        context.user_data.clear()
+        
+        await update.callback_query.edit_message_text(
+            "✅ <b>Состояния сброшены</b>\n\n"
+            "Все активные процессы добавления товаров/категорий отменены.\n"
+            "Используйте /admin для управления каталогом.",
+            parse_mode='HTML'
+        )
     
     async def handle_add_product_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
         """Обработка выбора категории для добавления товара"""
