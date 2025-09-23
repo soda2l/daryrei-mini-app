@@ -149,8 +149,12 @@ class DaryReiBot:
         def get_catalog():
             """API для получения каталога товаров"""
             try:
-                # Используем каталог из памяти бота (актуальная версия)
-                catalog = self.get_catalog()
+                # Всегда читаем актуальный каталог из файла
+                if os.path.exists(CATALOG_FILE):
+                    with open(CATALOG_FILE, 'r', encoding='utf-8') as f:
+                        catalog = json.load(f)
+                else:
+                    catalog = {"categories": [], "products": []}
                 
                 response = jsonify(catalog)
                 response.headers.add('Access-Control-Allow-Origin', '*')
@@ -239,9 +243,11 @@ class DaryReiBot:
             "description": description
         }
         self.catalog["categories"].append(category)
+        logger.info(f"Категория {name} добавлена в память. Всего категорий: {len(self.catalog['categories'])}")
+        
         success = self.save_catalog()
         if success:
-            logger.info(f"Категория {name} (ID: {category_id}) добавлена в каталог")
+            logger.info(f"Категория {name} (ID: {category_id}) добавлена в каталог и сохранена в файл")
         else:
             logger.error(f"Ошибка при сохранении категории {name} (ID: {category_id})")
         return success
@@ -266,9 +272,11 @@ class DaryReiBot:
             "available": available
         }
         self.catalog["products"].append(product)
+        logger.info(f"Товар {name} добавлен в память. Всего товаров: {len(self.catalog['products'])}")
+        
         success = self.save_catalog()
         if success:
-            logger.info(f"Товар {name} (ID: {product_id}) добавлен в каталог")
+            logger.info(f"Товар {name} (ID: {product_id}) добавлен в каталог и сохранен в файл")
         else:
             logger.error(f"Ошибка при сохранении товара {name} (ID: {product_id})")
         return success
