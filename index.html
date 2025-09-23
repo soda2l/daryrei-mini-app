@@ -2192,44 +2192,37 @@
             const galleryImage = document.getElementById('gallery-image');
             
             // Устанавливаем transition для плавной анимации
-            galleryImage.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+            galleryImage.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
             
-            // Правильная анимация: direction > 0 (следующее) уходит вправо, direction < 0 (предыдущее) уходит влево
-            const exitTransform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
-            galleryImage.style.transform = exitTransform;
-            galleryImage.style.opacity = '0';
+            // Простая анимация как в iPhone: просто сдвигаем влево/вправо
+            const slideTransform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+            galleryImage.style.transform = slideTransform;
             
-            console.log('📤 Текущее изображение уходит:', exitTransform);
+            console.log('📤 Сдвигаем изображение:', slideTransform);
             
-            // Уменьшаем задержку и используем requestAnimationFrame для более плавной анимации
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    currentImageIndex += direction;
-                    
-                    if (currentImageIndex < 0) {
-                        currentImageIndex = currentProductImages.length - 1;
-                    } else if (currentImageIndex >= currentProductImages.length) {
-                        currentImageIndex = 0;
-                    }
-                    
-                    console.log('🔄 Переключаемся на изображение:', currentImageIndex);
-                    showCurrentImage();
-                    
-                    // Новое изображение появляется с противоположной стороны
-                    // direction > 0 (следующее) появляется слева, direction < 0 (предыдущее) появляется справа
-                    const enterTransform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
-                    galleryImage.style.transform = enterTransform;
-                    
-                    console.log('📥 Новое изображение появляется с:', enterTransform);
-                    
-                    // Анимируем появление нового изображения
-                    requestAnimationFrame(() => {
-                        galleryImage.style.transform = 'translateX(0)';
-                        galleryImage.style.opacity = '1';
-                        console.log('✨ Анимация запущена к центру');
-                    });
-                }, 100); // Уменьшена задержка с 150ms до 100ms
-            });
+            // После завершения анимации переключаемся на новое изображение
+            setTimeout(() => {
+                currentImageIndex += direction;
+                
+                if (currentImageIndex < 0) {
+                    currentImageIndex = currentProductImages.length - 1;
+                } else if (currentImageIndex >= currentProductImages.length) {
+                    currentImageIndex = 0;
+                }
+                
+                console.log('🔄 Переключаемся на изображение:', currentImageIndex);
+                showCurrentImage();
+                
+                // Убираем transition для мгновенного возврата в исходную позицию
+                galleryImage.style.transition = 'none';
+                galleryImage.style.transform = 'translateX(0)';
+                
+                // Восстанавливаем transition для следующих анимаций
+                requestAnimationFrame(() => {
+                    galleryImage.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    console.log('✨ Анимация завершена');
+                });
+            }, 300); // Ждем завершения анимации
         }
 
         // Перейти к конкретному изображению
