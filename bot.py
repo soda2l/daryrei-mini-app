@@ -1480,6 +1480,8 @@ class DaryReiBot:
             await self.show_admin_categories_menu(update, context)
         elif data == "admin_add_product":
             await self.handle_admin_add_product(update, context)
+        elif data == "admin_edit_product":
+            await self.handle_admin_edit_product(update, context)
         elif data == "admin_add_category":
             await self.handle_admin_add_category(update, context)
         elif data == "admin_list_products":
@@ -1503,6 +1505,54 @@ class DaryReiBot:
             category_id = data.replace("add_product_category_", "")
 
             await self.handle_add_product_category(update, context, category_id)
+
+        elif data.startswith("edit_products_category_"):
+
+            category_id = data.replace("edit_products_category_", "")
+
+            await self.handle_edit_products_category(update, context, category_id)
+
+        elif data.startswith("edit_product_"):
+
+            product_id = data.replace("edit_product_", "")
+
+            await self.handle_edit_product(update, context, product_id)
+
+        elif data.startswith("edit_product_name_"):
+
+            product_id = data.replace("edit_product_name_", "")
+
+            await self.handle_edit_product_name(update, context, product_id)
+
+        elif data.startswith("edit_product_description_"):
+
+            product_id = data.replace("edit_product_description_", "")
+
+            await self.handle_edit_product_description(update, context, product_id)
+
+        elif data.startswith("edit_product_price_"):
+
+            product_id = data.replace("edit_product_price_", "")
+
+            await self.handle_edit_product_price(update, context, product_id)
+
+        elif data.startswith("edit_product_photos_"):
+
+            product_id = data.replace("edit_product_photos_", "")
+
+            await self.handle_edit_product_photos(update, context, product_id)
+
+        elif data.startswith("add_photo_to_product_"):
+
+            product_id = data.replace("add_photo_to_product_", "")
+
+            await self.handle_add_photo_to_product(update, context, product_id)
+
+        elif data.startswith("delete_all_photos_"):
+
+            product_id = data.replace("delete_all_photos_", "")
+
+            await self.handle_delete_all_photos(update, context, product_id)
 
         elif data.startswith("delete_product_"):
 
@@ -1543,6 +1593,7 @@ class DaryReiBot:
         
         keyboard = [
             [InlineKeyboardButton("➕ Добавить товар", callback_data="admin_add_product")],
+            [InlineKeyboardButton("✏️ Редактировать товар", callback_data="admin_edit_product")],
             [InlineKeyboardButton("🗑️ Удалить товар", callback_data="admin_delete_products")],
             [InlineKeyboardButton("📋 Посмотреть список товаров", callback_data="admin_list_products")],
             [InlineKeyboardButton("⬅️ Назад", callback_data="admin_back_to_main")]
@@ -1931,6 +1982,367 @@ class DaryReiBot:
         # Устанавливаем состояние ожидания ввода категории
         context.user_data['waiting_for_category'] = True
     
+    async def handle_admin_edit_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка редактирования товара - выбор категории"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Показываем доступные категории
+        categories = self.catalog.get("categories", [])
+        products = self.catalog.get("products", [])
+        
+        if not categories:
+            text = "❌ <b>Редактирование товара</b>\n\nСначала добавьте категории"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+            return
+        
+        # Показываем только категории, в которых есть товары
+        categories_with_products = []
+        for category in categories:
+            category_products = [p for p in products if p.get('category') == category['id']]
+            if category_products:
+                categories_with_products.append(category)
+        
+        if not categories_with_products:
+            text = "❌ <b>Редактирование товара</b>\n\nВ каталоге нет товаров для редактирования"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+            return
+        
+        text = "✏️ <b>Редактирование товара</b>\n\nВыберите категорию:"
+        keyboard = []
+        
+        for category in categories_with_products:
+            category_products = [p for p in products if p.get('category') == category['id']]
+            keyboard.append([InlineKeyboardButton(
+                f"📁 {category['name']} ({len(category_products)} товаров)", 
+                callback_data=f"edit_products_category_{category['id']}"
+            )])
+        
+        keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def handle_edit_products_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
+        """Обработка выбора товара в категории для редактирования"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим название категории
+        categories = self.catalog.get("categories", [])
+        category_name = "Неизвестная категория"
+        for cat in categories:
+            if cat['id'] == category_id:
+                category_name = cat['name']
+                break
+        
+        # Получаем товары этой категории
+        products = self.catalog.get("products", [])
+        category_products = [p for p in products if p.get('category') == category_id]
+        
+        if not category_products:
+            text = f"❌ <b>Редактирование товара</b>\n\n📁 Категория: {category_name}\n\nВ этой категории нет товаров"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_edit_product")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+            return
+        
+        text = f"✏️ <b>Редактирование товара</b>\n\n📁 Категория: {category_name}\n\nВыберите товар для редактирования:"
+        keyboard = []
+        
+        for product in category_products:
+            status = "✅" if product.get('available', True) else "❌"
+            keyboard.append([InlineKeyboardButton(
+                f"{status} {product['name']} - {product['price']} ₽", 
+                callback_data=f"edit_product_{product['id']}"
+            )])
+        
+        keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="admin_edit_product")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def handle_edit_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
+        """Обработка редактирования конкретного товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим товар
+        products = self.catalog.get("products", [])
+        product = None
+        for p in products:
+            if p["id"] == product_id:
+                product = p
+                break
+        
+        if not product:
+            await update.callback_query.edit_message_text("❌ Товар не найден")
+            return
+        
+        # Находим название категории
+        categories = self.catalog.get("categories", [])
+        category_name = "Неизвестная категория"
+        for cat in categories:
+            if cat['id'] == product.get('category'):
+                category_name = cat['name']
+                break
+        
+        # Формируем текст с информацией о товаре
+        images_count = len(product.get('images', []))
+        text = f"""✏️ <b>Редактирование товара</b>
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 <b>Название:</b> {product['name']}
+📝 <b>Описание:</b> {product.get('description', 'Не указано')}
+💰 <b>Цена:</b> {product['price']} ₽
+📁 <b>Категория:</b> {category_name}
+📸 <b>Фото:</b> {images_count} шт.
+
+<b>Выберите что редактировать:</b>"""
+        
+        keyboard = [
+            [InlineKeyboardButton("📝 Изменить название", callback_data=f"edit_product_name_{product_id}")],
+            [InlineKeyboardButton("📄 Изменить описание", callback_data=f"edit_product_description_{product_id}")],
+            [InlineKeyboardButton("💰 Изменить цену", callback_data=f"edit_product_price_{product_id}")],
+            [InlineKeyboardButton("📸 Изменить фото", callback_data=f"edit_product_photos_{product_id}")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="admin_edit_product")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def handle_edit_product_name(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
+        """Обработка редактирования названия товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим товар
+        products = self.catalog.get("products", [])
+        product = None
+        for p in products:
+            if p["id"] == product_id:
+                product = p
+                break
+        
+        if not product:
+            await update.callback_query.edit_message_text("❌ Товар не найден")
+            return
+        
+        text = f"""📝 <b>Изменение названия товара</b>
+
+📦 <b>Текущее название:</b> {product['name']}
+
+Отправьте новое название товара:"""
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data=f"edit_product_{product_id}")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+        
+        # Устанавливаем состояние ожидания ввода нового названия
+        context.user_data['waiting_for_edit_name'] = True
+        context.user_data['editing_product_id'] = product_id
+
+    async def handle_edit_product_description(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
+        """Обработка редактирования описания товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим товар
+        products = self.catalog.get("products", [])
+        product = None
+        for p in products:
+            if p["id"] == product_id:
+                product = p
+                break
+        
+        if not product:
+            await update.callback_query.edit_message_text("❌ Товар не найден")
+            return
+        
+        current_description = product.get('description', 'Не указано')
+        text = f"""📄 <b>Изменение описания товара</b>
+
+📦 <b>Товар:</b> {product['name']}
+📝 <b>Текущее описание:</b> {current_description}
+
+Отправьте новое описание товара:"""
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data=f"edit_product_{product_id}")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+        
+        # Устанавливаем состояние ожидания ввода нового описания
+        context.user_data['waiting_for_edit_description'] = True
+        context.user_data['editing_product_id'] = product_id
+
+    async def handle_edit_product_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
+        """Обработка редактирования цены товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим товар
+        products = self.catalog.get("products", [])
+        product = None
+        for p in products:
+            if p["id"] == product_id:
+                product = p
+                break
+        
+        if not product:
+            await update.callback_query.edit_message_text("❌ Товар не найден")
+            return
+        
+        text = f"""💰 <b>Изменение цены товара</b>
+
+📦 <b>Товар:</b> {product['name']}
+💰 <b>Текущая цена:</b> {product['price']} ₽
+
+Отправьте новую цену товара (только число):"""
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data=f"edit_product_{product_id}")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+        
+        # Устанавливаем состояние ожидания ввода новой цены
+        context.user_data['waiting_for_edit_price'] = True
+        context.user_data['editing_product_id'] = product_id
+
+    async def handle_edit_product_photos(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
+        """Обработка редактирования фото товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим товар
+        products = self.catalog.get("products", [])
+        product = None
+        for p in products:
+            if p["id"] == product_id:
+                product = p
+                break
+        
+        if not product:
+            await update.callback_query.edit_message_text("❌ Товар не найден")
+            return
+        
+        images_count = len(product.get('images', []))
+        text = f"""📸 <b>Редактор фото товара</b>
+
+📦 <b>Товар:</b> {product['name']}
+📸 <b>Текущее количество фото:</b> {images_count}
+
+<b>Выберите действие:</b>"""
+        
+        keyboard = [
+            [InlineKeyboardButton("➕ Добавить фото", callback_data=f"add_photo_to_product_{product_id}")],
+            [InlineKeyboardButton("🗑️ Удалить все фото", callback_data=f"delete_all_photos_{product_id}")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data=f"edit_product_{product_id}")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def handle_add_photo_to_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
+        """Обработка добавления фото к существующему товару"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим товар
+        products = self.catalog.get("products", [])
+        product = None
+        for p in products:
+            if p["id"] == product_id:
+                product = p
+                break
+        
+        if not product:
+            await update.callback_query.edit_message_text("❌ Товар не найден")
+            return
+        
+        text = f"""📸 <b>Добавление фото к товару</b>
+
+📦 <b>Товар:</b> {product['name']}
+📸 <b>Текущее количество фото:</b> {len(product.get('images', []))}
+
+Отправьте изображения для добавления к товару:"""
+        
+        keyboard = [
+            [InlineKeyboardButton("✅ Готово", callback_data=f"edit_product_photos_{product_id}")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data=f"edit_product_photos_{product_id}")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+        
+        # Устанавливаем состояние ожидания фото для редактирования
+        context.user_data['waiting_for_edit_photos'] = True
+        context.user_data['editing_product_id'] = product_id
+
+    async def handle_delete_all_photos(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
+        """Обработка удаления всех фото товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Находим товар
+        products = self.catalog.get("products", [])
+        product = None
+        for p in products:
+            if p["id"] == product_id:
+                product = p
+                break
+        
+        if not product:
+            await update.callback_query.edit_message_text("❌ Товар не найден")
+            return
+        
+        # Удаляем все фото
+        product['images'] = []
+        self.save_catalog()
+        
+        text = f"""✅ <b>Все фото удалены!</b>
+
+📦 <b>Товар:</b> {product['name']}
+📸 <b>Количество фото:</b> 0
+
+Возвращаемся в редактор фото..."""
+        
+        keyboard = [[InlineKeyboardButton("📸 Редактор фото", callback_data=f"edit_product_photos_{product_id}")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
 
     async def handle_add_product_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
 
@@ -2357,6 +2769,37 @@ class DaryReiBot:
                         
                         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                         return
+
+                # Обработка состояний редактирования товаров
+                elif context.user_data.get('waiting_for_edit_name'):
+                    await self.handle_edit_name_input(update, context, message_text)
+                    return
+
+                elif context.user_data.get('waiting_for_edit_description'):
+                    await self.handle_edit_description_input(update, context, message_text)
+                    return
+
+                elif context.user_data.get('waiting_for_edit_price'):
+                    await self.handle_edit_price_input(update, context, message_text)
+                    return
+
+                elif context.user_data.get('waiting_for_edit_photos'):
+                    if message_text.lower().strip() in ['готово', 'готово!', 'завершить', 'закончить']:
+                        # Возвращаемся в редактор фото
+                        product_id = context.user_data.get('editing_product_id')
+                        if product_id:
+                            await self.handle_edit_product_photos(update, context, product_id)
+                        return
+                    else:
+                        text = "📸 <b>Добавление фото</b>\n\nОтправьте изображения или нажмите 'Готово'"
+                        product_id = context.user_data.get('editing_product_id')
+                        keyboard = [
+                            [InlineKeyboardButton("✅ Готово", callback_data=f"edit_product_photos_{product_id}")],
+                            [InlineKeyboardButton("⬅️ Назад", callback_data=f"edit_product_photos_{product_id}")]
+                        ]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+                        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+                        return
                 else:
                     # Админ без активных состояний - показываем меню
                     await self.show_main_menu(update, context)
@@ -2650,7 +3093,7 @@ class DaryReiBot:
 
         
 
-        if not context.user_data.get('waiting_for_product_photos'):
+        if not context.user_data.get('waiting_for_product_photos') and not context.user_data.get('waiting_for_edit_photos'):
 
             return
 
@@ -2676,7 +3119,7 @@ class DaryReiBot:
 
             # Создаем имя файла
 
-            product_id = context.user_data.get('current_product_id')
+            product_id = context.user_data.get('current_product_id') or context.user_data.get('editing_product_id')
 
             if not product_id:
 
@@ -2739,34 +3182,70 @@ class DaryReiBot:
                     raise urllib_error
             
 
-            # Добавляем фото во временное хранилище
+            # Добавляем фото к товару
+            if context.user_data.get('waiting_for_product_photos'):
+                # Добавление фото к новому товару (временное хранилище)
+                temp_product = context.user_data.get('temp_product')
+                if not temp_product:
+                    await update.message.reply_text("❌ Ошибка: данные товара не найдены")
+                    return
 
-            temp_product = context.user_data.get('temp_product')
-            if not temp_product:
-                await update.message.reply_text("❌ Ошибка: данные товара не найдены")
-                return
+                if "images" not in temp_product:
+                    temp_product["images"] = []
+                temp_product["images"].append(filename)
 
-            if "images" not in temp_product:
-                temp_product["images"] = []
-            temp_product["images"].append(filename)
+                # Обновляем временное хранилище
+                context.user_data['temp_product'] = temp_product
 
-            # Обновляем временное хранилище
-            context.user_data['temp_product'] = temp_product
-
-            text = f"""✅ <b>Фото добавлено!</b>
+                text = f"""✅ <b>Фото добавлено!</b>
 
 📦 <b>{temp_product['name']}</b>
 📸 Всего фото: {len(temp_product['images'])}
 
 Отправьте еще фото или нажмите 'Готово' для завершения"""
+                
+                keyboard = [
+                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+                    [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
             
-            keyboard = [
-                [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
-                [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+            elif context.user_data.get('waiting_for_edit_photos'):
+                # Добавление фото к существующему товару
+                products = self.catalog.get("products", [])
+                product = None
+                for p in products:
+                    if p["id"] == product_id:
+                        product = p
+                        break
+                
+                if not product:
+                    await update.message.reply_text("❌ Ошибка: товар не найден")
+                    return
+                
+                if "images" not in product:
+                    product["images"] = []
+                product["images"].append(filename)
+                
+                # Сохраняем изменения в каталоге
+                self.save_catalog()
+
+                text = f"""✅ <b>Фото добавлено к товару!</b>
+
+📦 <b>{product['name']}</b>
+📸 Всего фото: {len(product['images'])}
+
+Отправьте еще фото или нажмите 'Готово' для завершения"""
+                
+                keyboard = [
+                    [InlineKeyboardButton("✅ Готово", callback_data=f"edit_product_photos_{product_id}")],
+                    [InlineKeyboardButton("⬅️ Назад", callback_data=f"edit_product_photos_{product_id}")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
 
         except Exception as e:
 
@@ -2910,6 +3389,124 @@ class DaryReiBot:
             logger.error(f"Ошибка при получении категорий: {e}")
             await update.message.reply_text(f"❌ Ошибка: {e}")
     
+    # ========== ОБРАБОТЧИКИ ВВОДА ПРИ РЕДАКТИРОВАНИИ ==========
+    
+    async def handle_edit_name_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
+        """Обработка ввода нового названия товара"""
+        product_id = context.user_data.get('editing_product_id')
+        if not product_id:
+            await update.message.reply_text("❌ Ошибка: не найден ID товара")
+            return
+        
+        new_name = message_text.strip()
+        if not new_name:
+            await update.message.reply_text("❌ Название не может быть пустым")
+            return
+        
+        # Находим и обновляем товар
+        products = self.catalog.get("products", [])
+        for product in products:
+            if product["id"] == product_id:
+                old_name = product['name']
+                product['name'] = new_name
+                self.save_catalog()
+                
+                text = f"""✅ <b>Название товара изменено!</b>
+
+📦 <b>Старое название:</b> {old_name}
+📦 <b>Новое название:</b> {new_name}
+
+Возвращаемся к редактированию товара..."""
+                
+                keyboard = [[InlineKeyboardButton("✏️ Редактировать товар", callback_data=f"edit_product_{product_id}")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+                
+                # Очищаем состояния
+                context.user_data.pop('waiting_for_edit_name', None)
+                context.user_data.pop('editing_product_id', None)
+                return
+        
+        await update.message.reply_text("❌ Товар не найден")
+
+    async def handle_edit_description_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
+        """Обработка ввода нового описания товара"""
+        product_id = context.user_data.get('editing_product_id')
+        if not product_id:
+            await update.message.reply_text("❌ Ошибка: не найден ID товара")
+            return
+        
+        new_description = message_text.strip()
+        
+        # Находим и обновляем товар
+        products = self.catalog.get("products", [])
+        for product in products:
+            if product["id"] == product_id:
+                old_description = product.get('description', 'Не указано')
+                product['description'] = new_description
+                self.save_catalog()
+                
+                text = f"""✅ <b>Описание товара изменено!</b>
+
+📦 <b>Товар:</b> {product['name']}
+📝 <b>Старое описание:</b> {old_description}
+📝 <b>Новое описание:</b> {new_description}
+
+Возвращаемся к редактированию товара..."""
+                
+                keyboard = [[InlineKeyboardButton("✏️ Редактировать товар", callback_data=f"edit_product_{product_id}")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+                
+                # Очищаем состояния
+                context.user_data.pop('waiting_for_edit_description', None)
+                context.user_data.pop('editing_product_id', None)
+                return
+        
+        await update.message.reply_text("❌ Товар не найден")
+
+    async def handle_edit_price_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
+        """Обработка ввода новой цены товара"""
+        product_id = context.user_data.get('editing_product_id')
+        if not product_id:
+            await update.message.reply_text("❌ Ошибка: не найден ID товара")
+            return
+        
+        try:
+            new_price = int(message_text.strip())
+            if new_price <= 0:
+                await update.message.reply_text("❌ Цена должна быть больше 0")
+                return
+        except ValueError:
+            await update.message.reply_text("❌ Цена должна быть числом")
+            return
+        
+        # Находим и обновляем товар
+        products = self.catalog.get("products", [])
+        for product in products:
+            if product["id"] == product_id:
+                old_price = product['price']
+                product['price'] = new_price
+                self.save_catalog()
+                
+                text = f"""✅ <b>Цена товара изменена!</b>
+
+📦 <b>Товар:</b> {product['name']}
+💰 <b>Старая цена:</b> {old_price} ₽
+💰 <b>Новая цена:</b> {new_price} ₽
+
+Возвращаемся к редактированию товара..."""
+                
+                keyboard = [[InlineKeyboardButton("✏️ Редактировать товар", callback_data=f"edit_product_{product_id}")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+                
+                # Очищаем состояния
+                context.user_data.pop('waiting_for_edit_price', None)
+                context.user_data.pop('editing_product_id', None)
+                return
+        
+        await update.message.reply_text("❌ Товар не найден")
 
     def run(self):
 
