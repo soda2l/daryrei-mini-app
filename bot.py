@@ -507,7 +507,7 @@ class DaryReiBot:
 
         self.catalog["products"].append(product)
 
-        logger.info(f"Товар {name} добавлен в память. Всего товаров: {len(self.catalog['products'])}")
+        logger.info(f"Товар {name} добавлен в память. ID: {product_id}. Всего товаров: {len(self.catalog['products'])}")
         
         success = self.save_catalog()
         if success:
@@ -1888,6 +1888,7 @@ class DaryReiBot:
             return
         
         # Добавляем товар в каталог
+        logger.info(f"Добавляем товар в каталог: ID={temp_product['id']}, название={temp_product['name']}")
         success = self.add_product(
             temp_product['id'],
             temp_product['name'],
@@ -1898,8 +1899,10 @@ class DaryReiBot:
         )
         
         if success:
+            logger.info(f"Товар успешно добавлен в каталог: ID={temp_product['id']}")
             text = f"✅ <b>Товар успешно добавлен в каталог!</b>\n\n📦 <b>{temp_product['name']}</b>\n\nВозвращаемся в меню управления товарами..."
         else:
+            logger.error(f"Ошибка при добавлении товара в каталог: ID={temp_product['id']}")
             text = "❌ <b>Ошибка при добавлении товара в каталог</b>\n\nВозвращаемся в меню управления товарами..."
         
         # Очищаем все состояния и временные данные
@@ -2082,6 +2085,11 @@ class DaryReiBot:
         
         # Находим товар
         products = self.catalog.get("products", [])
+        logger.info(f"Ищем товар с ID: {product_id}")
+        logger.info(f"Всего товаров в каталоге: {len(products)}")
+        for p in products:
+            logger.info(f"Товар в каталоге: ID={p['id']}, название={p['name']}")
+        
         product = None
         for p in products:
             if p["id"] == product_id:
@@ -2089,6 +2097,7 @@ class DaryReiBot:
                 break
         
         if not product:
+            logger.error(f"Товар с ID {product_id} не найден в каталоге")
             await update.callback_query.edit_message_text("❌ Товар не найден")
             return
         
