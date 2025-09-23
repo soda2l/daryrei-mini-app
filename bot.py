@@ -447,6 +447,34 @@ def serve_mini_app():
         
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
+    async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Команда /start"""
+        user_id = update.effective_user.id
+        user_name = update.effective_user.first_name
+        
+        welcome_text = f"""👋 <b>Привет, {user_name}!</b>
+
+Добро пожаловать в магазин <b>DaryRei</b>! 🌟
+
+Здесь вы найдете:
+🕯️ Ароматические свечи ручной работы
+📦 Подарочные наборы
+🏠 Домашний декор
+💌 Открытки
+
+Для просмотра каталога нажмите кнопку ниже:"""
+
+        keyboard = [
+            [InlineKeyboardButton("🛍️ Открыть каталог", web_app=WebAppInfo(url="https://daryreibot.duckdns.org/"))],
+            [InlineKeyboardButton("📞 Связаться с нами", url="https://t.me/daryrei_support")]
+        ]
+        
+        if self.is_admin(user_id):
+            keyboard.append([InlineKeyboardButton("🛠️ Админ-панель", callback_data="admin_panel")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode='HTML')
+
     async def reset_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Сброс состояний админа"""
         user_id = update.effective_user.id
