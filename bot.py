@@ -212,11 +212,24 @@ class DaryReiBot:
     def save_catalog(self):
         """Сохранение каталога в файл"""
         try:
+            # Проверяем права на запись
+            if not os.access(CATALOG_FILE, os.W_OK):
+                logger.error(f"Нет прав на запись в файл {CATALOG_FILE}")
+                # Пытаемся исправить права
+                try:
+                    os.chmod(CATALOG_FILE, 0o666)
+                    logger.info(f"Права на файл {CATALOG_FILE} исправлены")
+                except Exception as chmod_error:
+                    logger.error(f"Не удалось исправить права: {chmod_error}")
+                    return False
+            
             with open(CATALOG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(self.catalog, f, ensure_ascii=False, indent=2)
             logger.info("Каталог сохранен")
+            return True
         except Exception as e:
             logger.error(f"Ошибка при сохранении каталога: {e}")
+            return False
     
     def is_admin(self, user_id):
         """Проверка, является ли пользователь админом"""
