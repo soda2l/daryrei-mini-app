@@ -2571,7 +2571,7 @@ class DaryReiBot:
                 
                 keyboard = [
                     [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
-                    [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+                    [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
@@ -2751,7 +2751,8 @@ class DaryReiBot:
 Отправьте еще фото или нажмите 'Готово' для завершения"""
                 
                 keyboard = [
-                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")]
+                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+                    [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
