@@ -1370,10 +1370,10 @@ class DaryReiBot:
             ]
             
             if not products_in_category:
-            await update.callback_query.edit_message_text(
+                await update.callback_query.edit_message_text(
                     f"ℹ️ В категории <b>{category['name']}</b> нет товаров",
-                parse_mode='HTML'
-            )
+                    parse_mode='HTML'
+                )
                 return
             
             # Создаем кнопки для выбора товаров
