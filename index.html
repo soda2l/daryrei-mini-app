@@ -2194,8 +2194,8 @@
             // Убираем transition для мгновенного изменения
             galleryImage.style.transition = 'none';
             
-            // Правильная анимация: direction > 0 (следующее) уходит влево, direction < 0 (предыдущее) уходит вправо
-            const exitTransform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+            // Правильная анимация: direction > 0 (следующее) уходит вправо, direction < 0 (предыдущее) уходит влево
+            const exitTransform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
             galleryImage.style.transform = exitTransform;
             galleryImage.style.opacity = '0';
             
@@ -2214,8 +2214,8 @@
                 showCurrentImage();
                 
                 // Новое изображение появляется с противоположной стороны
-                // direction > 0 (следующее) появляется справа, direction < 0 (предыдущее) появляется слева
-                const enterTransform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
+                // direction > 0 (следующее) появляется слева, direction < 0 (предыдущее) появляется справа
+                const enterTransform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
                 galleryImage.style.transform = enterTransform;
                 
                 console.log('📥 Новое изображение появляется с:', enterTransform);
