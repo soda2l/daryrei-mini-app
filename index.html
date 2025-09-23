@@ -2234,11 +2234,11 @@
             // Проверяем, что это горизонтальный свайп
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
                 if (deltaX > 0) {
-                    // Свайп вправо - следующее изображение
-                    changeGalleryImage(1);
-                } else {
-                    // Свайп влево - предыдущее изображение
+                    // Свайп вправо - предыдущее изображение
                     changeGalleryImage(-1);
+                } else {
+                    // Свайп влево - следующее изображение
+                    changeGalleryImage(1);
                 }
             }
         }
