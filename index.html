@@ -2191,8 +2191,8 @@
             // Анимация смены изображения
             const galleryImage = document.getElementById('gallery-image');
             
-            // Убираем transition для мгновенного изменения
-            galleryImage.style.transition = 'none';
+            // Устанавливаем transition для плавной анимации
+            galleryImage.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
             
             // Правильная анимация: direction > 0 (следующее) уходит вправо, direction < 0 (предыдущее) уходит влево
             const exitTransform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
@@ -2201,35 +2201,35 @@
             
             console.log('📤 Текущее изображение уходит:', exitTransform);
             
-            setTimeout(() => {
-                currentImageIndex += direction;
-                
-                if (currentImageIndex < 0) {
-                    currentImageIndex = currentProductImages.length - 1;
-                } else if (currentImageIndex >= currentProductImages.length) {
-                    currentImageIndex = 0;
-                }
-                
-                console.log('🔄 Переключаемся на изображение:', currentImageIndex);
-                showCurrentImage();
-                
-                // Новое изображение появляется с противоположной стороны
-                // direction > 0 (следующее) появляется слева, direction < 0 (предыдущее) появляется справа
-                const enterTransform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
-                galleryImage.style.transform = enterTransform;
-                
-                console.log('📥 Новое изображение появляется с:', enterTransform);
-                
-                // Восстанавливаем transition и анимируем появление
-                galleryImage.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-                
-                // Принудительно запускаем анимацию
-                requestAnimationFrame(() => {
-                    galleryImage.style.transform = 'translateX(0)';
-                    galleryImage.style.opacity = '1';
-                    console.log('✨ Анимация запущена к центру');
-                });
-            }, 150);
+            // Уменьшаем задержку и используем requestAnimationFrame для более плавной анимации
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    currentImageIndex += direction;
+                    
+                    if (currentImageIndex < 0) {
+                        currentImageIndex = currentProductImages.length - 1;
+                    } else if (currentImageIndex >= currentProductImages.length) {
+                        currentImageIndex = 0;
+                    }
+                    
+                    console.log('🔄 Переключаемся на изображение:', currentImageIndex);
+                    showCurrentImage();
+                    
+                    // Новое изображение появляется с противоположной стороны
+                    // direction > 0 (следующее) появляется слева, direction < 0 (предыдущее) появляется справа
+                    const enterTransform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+                    galleryImage.style.transform = enterTransform;
+                    
+                    console.log('📥 Новое изображение появляется с:', enterTransform);
+                    
+                    // Анимируем появление нового изображения
+                    requestAnimationFrame(() => {
+                        galleryImage.style.transform = 'translateX(0)';
+                        galleryImage.style.opacity = '1';
+                        console.log('✨ Анимация запущена к центру');
+                    });
+                }, 100); // Уменьшена задержка с 150ms до 100ms
+            });
         }
 
         // Перейти к конкретному изображению
