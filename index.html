@@ -758,6 +758,11 @@
         .gallery-slide {
             transition: transform 0.3s ease-out, opacity 0.3s ease-out;
         }
+        
+        /* Принудительная анимация для галереи */
+        .gallery-image {
+            will-change: transform, opacity;
+        }
 
         /* Стили для страницы оформления заказа */
         .checkout-form {
@@ -2181,6 +2186,8 @@
         function changeGalleryImage(direction) {
             if (currentProductImages.length <= 1) return;
             
+            console.log('🔄 changeGalleryImage вызвана с direction:', direction);
+            
             // Анимация смены изображения
             const galleryImage = document.getElementById('gallery-image');
             
@@ -2188,8 +2195,11 @@
             galleryImage.style.transition = 'none';
             
             // Правильная анимация: direction > 0 (следующее) уходит влево, direction < 0 (предыдущее) уходит вправо
-            galleryImage.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+            const exitTransform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+            galleryImage.style.transform = exitTransform;
             galleryImage.style.opacity = '0';
+            
+            console.log('📤 Текущее изображение уходит:', exitTransform);
             
             setTimeout(() => {
                 currentImageIndex += direction;
@@ -2200,16 +2210,25 @@
                     currentImageIndex = 0;
                 }
                 
+                console.log('🔄 Переключаемся на изображение:', currentImageIndex);
                 showCurrentImage();
                 
                 // Новое изображение появляется с противоположной стороны
                 // direction > 0 (следующее) появляется справа, direction < 0 (предыдущее) появляется слева
-                galleryImage.style.transform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
+                const enterTransform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
+                galleryImage.style.transform = enterTransform;
+                
+                console.log('📥 Новое изображение появляется с:', enterTransform);
                 
                 // Восстанавливаем transition и анимируем появление
                 galleryImage.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-                galleryImage.style.transform = 'translateX(0)';
-                galleryImage.style.opacity = '1';
+                
+                // Принудительно запускаем анимацию
+                requestAnimationFrame(() => {
+                    galleryImage.style.transform = 'translateX(0)';
+                    galleryImage.style.opacity = '1';
+                    console.log('✨ Анимация запущена к центру');
+                });
             }, 150);
         }
 
