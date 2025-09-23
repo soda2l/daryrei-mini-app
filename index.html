@@ -1404,18 +1404,18 @@
                     button.className = 'category-btn';
                     button.onclick = () => filterProducts(category.id);
                     
-                    // Добавляем эмодзи в зависимости от категории
-                    let emoji = '📦';
+                    // Добавляем эмодзи только для существующих категорий
+                    let emoji = '';
                     switch(category.id) {
-                        case 'candles': emoji = '🕯️'; break;
-                        case 'boxes': emoji = '📦'; break;
-                        case 'postcards': emoji = '💌'; break;
-                        case 'stickers': emoji = '🏷️'; break;
-                        case 'home': emoji = '🏠'; break;
-                        default: emoji = '📦';
+                        case 'candles': emoji = '🕯️ '; break;
+                        case 'boxes': emoji = '📦 '; break;
+                        case 'postcards': emoji = '💌 '; break;
+                        case 'stickers': emoji = '🏷️ '; break;
+                        case 'home': emoji = '🏠 '; break;
+                        default: emoji = ''; // Для новых категорий без эмодзи
                     }
                     
-                    button.textContent = `${emoji} ${category.name}`;
+                    button.textContent = `${emoji}${category.name}`;
                     categoryFilter.appendChild(button);
                 });
             }
