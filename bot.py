@@ -980,7 +980,7 @@ class DaryReiBot:
             keyboard = []
             
             for product in category_products:
-                status = "✅" if product.get('available', True) else "❌"
+                status = "❌"  # Серый крестик для всех товаров при удалении
                 keyboard.append([InlineKeyboardButton(
                     f"{status} {product['name']} - {product['price']} ₽", 
                     callback_data=f"delete_product_{product['id']}"
