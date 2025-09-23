@@ -1512,12 +1512,6 @@ class DaryReiBot:
 
             await self.handle_edit_products_category(update, context, category_id)
 
-        elif data.startswith("edit_product_"):
-
-            product_id = data.replace("edit_product_", "")
-
-            await self.handle_edit_product(update, context, product_id)
-
         elif data.startswith("edit_product_name_"):
 
             product_id = data.replace("edit_product_name_", "")
@@ -1541,6 +1535,12 @@ class DaryReiBot:
             product_id = data.replace("edit_product_photos_", "")
 
             await self.handle_edit_product_photos(update, context, product_id)
+
+        elif data.startswith("edit_product_"):
+
+            product_id = data.replace("edit_product_", "")
+
+            await self.handle_edit_product(update, context, product_id)
 
         elif data.startswith("add_photo_to_product_"):
 
@@ -2967,6 +2967,7 @@ class DaryReiBot:
         
 
         context.user_data['product_name'] = message_text.strip()
+        logger.info(f"Сохраняем product_name в context: '{message_text.strip()}'")
 
         context.user_data.pop('waiting_for_product_name', None)
 
@@ -3021,12 +3022,16 @@ class DaryReiBot:
             # Создаем ID товара
 
             product_name = context.user_data.get('product_name', '')
+            logger.info(f"Создаем ID товара. product_name из context: '{product_name}'")
 
             product_id = product_name.lower().replace(' ', '_').replace('ё', 'e').replace('й', 'y')
+            logger.info(f"После обработки символов: '{product_id}'")
 
             product_id = ''.join(c for c in product_id if c.isalnum() or c == '_')
+            logger.info(f"После фильтрации: '{product_id}'")
 
             product_id = f"{product_id}_{int(time.time())}"  # Добавляем timestamp для уникальности
+            logger.info(f"Финальный ID товара: '{product_id}'")
 
             
 
