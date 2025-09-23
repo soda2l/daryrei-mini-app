@@ -2122,7 +2122,7 @@
                 // Обрабатываем URL изображения
                 let imageUrl = currentProductImages[currentImageIndex];
                 if (!imageUrl.startsWith('http')) {
-                    imageUrl = `http://localhost:8000/images/${imageUrl}`;
+                    imageUrl = `https://daryreibot.duckdns.org/images/${imageUrl}`;
                 }
                 
                 galleryImage.style.backgroundImage = `url('${imageUrl}')`;
