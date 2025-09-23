@@ -397,40 +397,43 @@ class DaryReiBot:
             await update.message.reply_text("❌ У вас нет прав доступа к админ-панели")
             return
         
-        text = """🛠️ <b>АДМИН-ПАНЕЛЬ</b>
-━━━━━━━━━━━━━━━━━━━━━━━━
-
-📦 <b>Управление товарами:</b>
-• /add_product - Добавить товар
-• /delete_product - Удалить товар
-• /list_products - Показать все товары
-
-📁 <b>Управление категориями:</b>
-• /add_category - Добавить категорию
-• /delete_category - Удалить категорию
-• /list_categories - Показать все категории
-
-🔧 <b>Утилиты:</b>
-• /reset - Сбросить состояния
-
-📊 <b>Статистика:</b>
-• Всего товаров: {products_count}
-• Всего категорий: {categories_count}"""
+        # Удаляем предыдущее сообщение если есть
+        if 'admin_message_id' in context.user_data:
+            try:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                               message_id=context.user_data['admin_message_id'])
+            except:
+                pass
         
+        # Получаем статистику
         products_count = len(self.catalog.get("products", []))
         categories_count = len(self.catalog.get("categories", []))
         
-        text = text.format(products_count=products_count, categories_count=categories_count)
+        text = f"""🛠️ <b>АДМИН-ПАНЕЛЬ</b>
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>📋 Как пользоваться:</b>
+• Нажимайте на кнопки для навигации
+• Используйте кнопку "Назад" для возврата
+• Сообщения удаляются автоматически
+
+📊 <b>Статистика:</b>
+• Всего товаров: {products_count}
+• Всего категорий: {categories_count}
+
+<b>Выберите раздел для управления:</b>"""
         
-        # Добавляем кнопки для быстрого доступа
         keyboard = [
-            [InlineKeyboardButton("🔄 Сбросить состояния", callback_data="admin_reset")],
-            [InlineKeyboardButton("📦 Добавить товар", callback_data="admin_add_product")],
-            [InlineKeyboardButton("📁 Добавить категорию", callback_data="admin_add_category")]
+            [InlineKeyboardButton("📦 УПРАВЛЕНИЕ ТОВАРАМИ", callback_data="admin_products")],
+            [InlineKeyboardButton("📁 УПРАВЛЕНИЕ КАТЕГОРИЯМИ", callback_data="admin_categories")],
+            [InlineKeyboardButton("🔄 Сбросить состояния", callback_data="admin_reset")]
         ]
+        
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+        # Отправляем новое сообщение и сохраняем его ID
+        message = await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+        context.user_data['admin_message_id'] = message.message_id
     
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Команда /start"""
@@ -785,10 +788,28 @@ class DaryReiBot:
             await query.edit_message_text("❌ Операция отменена")
         elif data == "admin_reset":
             await self.handle_admin_reset(update, context)
+        elif data == "admin_products":
+            await self.show_admin_products_menu(update, context)
+        elif data == "admin_categories":
+            await self.show_admin_categories_menu(update, context)
         elif data == "admin_add_product":
             await self.handle_admin_add_product(update, context)
         elif data == "admin_add_category":
             await self.handle_admin_add_category(update, context)
+        elif data == "admin_list_products":
+            await self.show_admin_list_products(update, context)
+        elif data == "admin_delete_products":
+            await self.show_admin_delete_products(update, context)
+        elif data == "admin_list_categories":
+            await self.show_admin_list_categories(update, context)
+        elif data == "admin_delete_categories":
+            await self.show_admin_delete_categories(update, context)
+        elif data == "admin_back_to_main":
+            await self.show_admin_main_menu(update, context)
+        elif data == "add_photos":
+            await self.handle_add_photos(update, context)
+        elif data == "finish_product":
+            await self.handle_finish_product(update, context)
         elif data.startswith("add_product_category_"):
             category_id = data.replace("add_product_category_", "")
             await self.handle_add_product_category(update, context, category_id)
@@ -804,6 +825,266 @@ class DaryReiBot:
     
     # ========== ОБРАБОТЧИКИ АДМИНСКИХ ДЕЙСТВИЙ ==========
     
+    async def show_admin_products_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Меню управления товарами"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        text = """📦 <b>УПРАВЛЕНИЕ ТОВАРАМИ</b>
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+Выберите действие:"""
+        
+        keyboard = [
+            [InlineKeyboardButton("➕ Добавить товар", callback_data="admin_add_product")],
+            [InlineKeyboardButton("🗑️ Удалить товар", callback_data="admin_delete_products")],
+            [InlineKeyboardButton("📋 Посмотреть список товаров", callback_data="admin_list_products")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="admin_back_to_main")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def show_admin_categories_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Меню управления категориями"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        text = """📁 <b>УПРАВЛЕНИЕ КАТЕГОРИЯМИ</b>
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+Выберите действие:"""
+        
+        keyboard = [
+            [InlineKeyboardButton("➕ Добавить категорию", callback_data="admin_add_category")],
+            [InlineKeyboardButton("🗑️ Удалить категорию", callback_data="admin_delete_categories")],
+            [InlineKeyboardButton("ℹ️ Информация о категориях", callback_data="admin_list_categories")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="admin_back_to_main")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def show_admin_list_products(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Показать список всех товаров по категориям"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        products = self.catalog.get("products", [])
+        categories = self.catalog.get("categories", [])
+        
+        if not products:
+            text = "📋 <b>СПИСОК ТОВАРОВ</b>\n\n❌ Товары не найдены"
+        else:
+            text = "📋 <b>СПИСОК ТОВАРОВ</b>\n\n"
+            
+            # Группируем товары по категориям
+            products_by_category = {}
+            for product in products:
+                category_id = product.get('category', 'unknown')
+                if category_id not in products_by_category:
+                    products_by_category[category_id] = []
+                products_by_category[category_id].append(product)
+            
+            # Находим названия категорий
+            category_names = {cat['id']: cat['name'] for cat in categories}
+            
+            for category_id, category_products in products_by_category.items():
+                category_name = category_names.get(category_id, f"Неизвестная категория ({category_id})")
+                text += f"<b>📁 {category_name}</b>\n"
+                
+                for product in category_products:
+                    status = "✅" if product.get('available', True) else "❌"
+                    text += f"• {status} {product['name']} - {product['price']} ₽\n"
+                text += "\n"
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def show_admin_list_categories(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Показать информацию о категориях с количеством товаров"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        categories = self.catalog.get("categories", [])
+        products = self.catalog.get("products", [])
+        
+        if not categories:
+            text = "📁 <b>ИНФОРМАЦИЯ О КАТЕГОРИЯХ</b>\n\n❌ Категории не найдены"
+        else:
+            text = "📁 <b>ИНФОРМАЦИЯ О КАТЕГОРИЯХ</b>\n\n"
+            
+            # Подсчитываем товары в каждой категории
+            products_by_category = {}
+            for product in products:
+                category_id = product.get('category', 'unknown')
+                products_by_category[category_id] = products_by_category.get(category_id, 0) + 1
+            
+            for category in categories:
+                product_count = products_by_category.get(category['id'], 0)
+                text += f"<b>📁 {category['name']}</b>\n"
+                text += f"• Товаров: {product_count}\n"
+                if category.get('description'):
+                    text += f"• Описание: {category['description']}\n"
+                text += "\n"
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def show_admin_delete_products(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Показать категории для удаления товаров"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        categories = self.catalog.get("categories", [])
+        products = self.catalog.get("products", [])
+        
+        if not categories:
+            text = "🗑️ <b>УДАЛЕНИЕ ТОВАРОВ</b>\n\n❌ Категории не найдены"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]]
+        else:
+            text = "🗑️ <b>УДАЛЕНИЕ ТОВАРОВ</b>\n\nВыберите категорию:"
+            keyboard = []
+            
+            # Показываем только категории с товарами
+            for category in categories:
+                category_products = [p for p in products if p.get('category') == category['id']]
+                if category_products:
+                    keyboard.append([InlineKeyboardButton(
+                        f"📁 {category['name']} ({len(category_products)} товаров)", 
+                        callback_data=f"delete_products_category_{category['id']}"
+                    )])
+            
+            keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def show_admin_delete_categories(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Показать категории для удаления"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        categories = self.catalog.get("categories", [])
+        products = self.catalog.get("products", [])
+        
+        if not categories:
+            text = "🗑️ <b>УДАЛЕНИЕ КАТЕГОРИЙ</b>\n\n❌ Категории не найдены"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
+        else:
+            text = "🗑️ <b>УДАЛЕНИЕ КАТЕГОРИЙ</b>\n\nВыберите категорию для удаления:"
+            keyboard = []
+            
+            for category in categories:
+                category_products = [p for p in products if p.get('category') == category['id']]
+                product_count = len(category_products)
+                
+                keyboard.append([InlineKeyboardButton(
+                    f"📁 {category['name']} ({product_count} товаров)", 
+                    callback_data=f"delete_category_{category['id']}"
+                )])
+            
+            keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def show_admin_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Показать главное меню админ-панели"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Получаем статистику
+        products_count = len(self.catalog.get("products", []))
+        categories_count = len(self.catalog.get("categories", []))
+        
+        text = f"""🛠️ <b>АДМИН-ПАНЕЛЬ</b>
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+<b>📋 Как пользоваться:</b>
+• Нажимайте на кнопки для навигации
+• Используйте кнопку "Назад" для возврата
+• Сообщения удаляются автоматически
+
+📊 <b>Статистика:</b>
+• Всего товаров: {products_count}
+• Всего категорий: {categories_count}
+
+<b>Выберите раздел для управления:</b>"""
+        
+        keyboard = [
+            [InlineKeyboardButton("📦 УПРАВЛЕНИЕ ТОВАРАМИ", callback_data="admin_products")],
+            [InlineKeyboardButton("📁 УПРАВЛЕНИЕ КАТЕГОРИЯМИ", callback_data="admin_categories")],
+            [InlineKeyboardButton("🔄 Сбросить состояния", callback_data="admin_reset")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def handle_add_photos(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка добавления фото к товару"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        text = "📸 <b>Добавление фото</b>\n\nОтправьте изображения для товара:"
+        keyboard = [
+            [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+        
+        # Устанавливаем состояние ожидания фото
+        context.user_data['waiting_for_product_photos'] = True
+    
+    async def handle_finish_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Завершение добавления товара"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Очищаем состояния
+        context.user_data.pop('waiting_for_product_photos', None)
+        context.user_data.pop('current_product_id', None)
+        context.user_data.pop('selected_category', None)
+        context.user_data.pop('product_name', None)
+        context.user_data.pop('product_description', None)
+        
+        text = "✅ <b>Товар успешно добавлен!</b>\n\nВозвращаемся в меню управления товарами..."
+        keyboard = [[InlineKeyboardButton("📦 Управление товарами", callback_data="admin_products")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
     async def handle_admin_reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработка сброса состояний через кнопку"""
         user_id = update.effective_user.id
@@ -815,12 +1096,8 @@ class DaryReiBot:
         # Очищаем все состояния ожидания
         context.user_data.clear()
         
-        await update.callback_query.edit_message_text(
-            "✅ <b>Состояния сброшены</b>\n\n"
-            "Все активные процессы добавления товаров/категорий отменены.\n"
-            "Используйте /admin для управления каталогом.",
-            parse_mode='HTML'
-        )
+        # Показываем главное меню
+        await self.show_admin_main_menu(update, context)
     
     async def handle_admin_add_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработка добавления товара через кнопку"""
@@ -833,7 +1110,10 @@ class DaryReiBot:
         # Показываем доступные категории
         categories = self.catalog.get("categories", [])
         if not categories:
-            await update.callback_query.edit_message_text("❌ Сначала добавьте категории командой /add_category")
+            text = "❌ <b>Добавление товара</b>\n\nСначала добавьте категории"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
             return
         
         text = "📦 <b>Добавление товара</b>\n\nВыберите категорию:"
@@ -845,7 +1125,7 @@ class DaryReiBot:
                 callback_data=f"add_product_category_{category['id']}"
             )])
         
-        keyboard.append([InlineKeyboardButton("❌ Отмена", callback_data="admin_cancel")])
+        keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
@@ -858,13 +1138,19 @@ class DaryReiBot:
             await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
             return
         
-        await update.callback_query.edit_message_text(
-            "📁 <b>Добавление категории</b>\n\n"
-            "Отправьте сообщение в формате:\n"
-            "<code>название_категории|описание</code>\n\n"
-            "Пример: <code>свечи|Ароматические свечи ручной работы</code>",
-            parse_mode='HTML'
-        )
+        text = """📁 <b>Добавление категории</b>
+
+Отправьте сообщение в формате:
+<code>название_категории|описание</code>
+
+Пример: <code>свечи|Ароматические свечи ручной работы</code>
+
+<b>Или просто название категории без описания</b>"""
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
         
         # Устанавливаем состояние ожидания ввода категории
         context.user_data['waiting_for_category'] = True
@@ -881,11 +1167,11 @@ class DaryReiBot:
         context.user_data['selected_category'] = category_id
         context.user_data['waiting_for_product_name'] = True
         
-        await update.callback_query.edit_message_text(
-            "📦 <b>Добавление товара</b>\n\n"
-            "Отправьте название товара:",
-            parse_mode='HTML'
-        )
+        text = "📦 <b>Добавление товара</b>\n\nОтправьте название товара:"
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
     async def handle_delete_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
         """Обработка удаления товара"""
@@ -1195,18 +1481,21 @@ class DaryReiBot:
     async def handle_product_name_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
         """Обработка ввода названия товара"""
         if not message_text.strip():
-            await update.message.reply_text("❌ Название товара не может быть пустым")
+            text = "❌ <b>Добавление товара</b>\n\nНазвание товара не может быть пустым"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
             return
         
         context.user_data['product_name'] = message_text.strip()
         context.user_data.pop('waiting_for_product_name', None)
         context.user_data['waiting_for_product_description'] = True
         
-        await update.message.reply_text(
-            "📝 <b>Добавление товара</b>\n\n"
-            "Отправьте описание товара:",
-            parse_mode='HTML'
-        )
+        text = "📝 <b>Добавление товара</b>\n\nОтправьте описание товара:"
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
     async def handle_product_description_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
         """Обработка ввода описания товара"""
@@ -1214,18 +1503,21 @@ class DaryReiBot:
         context.user_data.pop('waiting_for_product_description', None)
         context.user_data['waiting_for_product_price'] = True
         
-        await update.message.reply_text(
-            "💰 <b>Добавление товара</b>\n\n"
-            "Отправьте цену товара (только число):",
-            parse_mode='HTML'
-        )
+        text = "💰 <b>Добавление товара</b>\n\nОтправьте цену товара (только число):"
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
     async def handle_product_price_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
         """Обработка ввода цены товара"""
         try:
             price = int(message_text.strip())
             if price <= 0:
-                await update.message.reply_text("❌ Цена должна быть больше 0")
+                text = "❌ <b>Добавление товара</b>\n\nЦена должна быть больше 0"
+                keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                 return
             
             # Создаем ID товара
@@ -1241,14 +1533,23 @@ class DaryReiBot:
             
             # Добавляем товар (пока без фото)
             if self.add_product(product_id, name, description, price, category_id, []):
-                await update.message.reply_text(
-                    f"✅ Товар <b>{name}</b> успешно добавлен!\n"
-                    f"💰 Цена: {price} ₽\n"
-                    f"📁 Категория: {category_id}\n"
-                    f"🆔 ID: <code>{product_id}</code>\n\n"
-                    f"📸 Для добавления фото отправьте изображения следующим сообщением",
-                    parse_mode='HTML'
-                )
+                text = f"""✅ <b>Товар добавлен!</b>
+
+📦 <b>{name}</b>
+💰 Цена: {price} ₽
+📁 Категория: {category_id}
+🆔 ID: <code>{product_id}</code>
+
+📸 Для добавления фото отправьте изображения"""
+                
+                keyboard = [
+                    [InlineKeyboardButton("📸 Добавить фото", callback_data="add_photos")],
+                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+                    [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                 
                 # Устанавливаем состояние ожидания фото
                 context.user_data['waiting_for_product_photos'] = True
