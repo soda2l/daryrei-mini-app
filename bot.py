@@ -304,21 +304,6 @@ def serve_mini_app():
                 return True
         return False
     
-    async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Обработчик команды /start"""
-        welcome_text = """🕯 Магазин авторских свечей DaryRei
-
-✨ Уют, аромат и тепло в каждой свече.
-
-Нажмите Старт, чтобы начать работу 🔥"""
-        
-        keyboard = [
-            [InlineKeyboardButton("🚀 Начать покупки", callback_data="start_shopping")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(welcome_text, reply_markup=reply_markup)
-    
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработчик команды /help"""
         user_id = update.effective_user.id
