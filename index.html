@@ -1178,7 +1178,7 @@
             
             try {
                 console.log('📡 Отправляем запрос к серверу...');
-                const response = await fetch('https://daryreibot.duckdns.org/api/catalog');
+                const response = await fetch('http://localhost:8000/api/catalog');
                 
                 console.log('📡 Получен ответ от сервера:', response.status);
                 
@@ -1498,7 +1498,7 @@
                 // Если изображение начинается с http, используем как есть, иначе добавляем путь к серверу
                 imageUrl = product.images[0].startsWith('http') 
                     ? product.images[0] 
-                    : `https://daryreibot.duckdns.org/images/${product.images[0]}`;
+                    : `http://localhost:8000/images/${product.images[0]}`;
             }
             
             const imageElement = imageUrl ? 
@@ -1779,7 +1779,7 @@
                 
                 console.log('Sending order data via HTTP:', orderData);
                 
-                const response = await fetch('https://daryreibot.duckdns.org/api/order', {
+                const response = await fetch('http://localhost:8000/api/order', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1942,7 +1942,7 @@
                 
                 console.log('Sending order data via HTTP (openBotChat):', orderData);
                 
-                const response = await fetch('https://daryreibot.duckdns.org/api/order', {
+                const response = await fetch('http://localhost:8000/api/order', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2080,7 +2080,7 @@
                 // Обрабатываем URL изображения
                 let imageUrl = currentProductImages[currentImageIndex];
                 if (!imageUrl.startsWith('http')) {
-                    imageUrl = `https://daryreibot.duckdns.org/images/${imageUrl}`;
+                    imageUrl = `http://localhost:8000/images/${imageUrl}`;
                 }
                 
                 galleryImage.style.backgroundImage = `url('${imageUrl}')`;

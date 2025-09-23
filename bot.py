@@ -8,7 +8,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppI
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 import os
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import threading
 import time
@@ -177,6 +177,14 @@ class DaryReiBot:
                 response = jsonify({"error": str(e)})
                 response.headers.add('Access-Control-Allow-Origin', '*')
                 return response, 500
+        
+        @flask_app.route('/images/<path:filename>')
+        def serve_image(filename):
+            """Сервер для статических изображений"""
+            try:
+                return send_from_directory('images', filename)
+            except FileNotFoundError:
+                return "Image not found", 404
     
     def run_flask(self):
         """Запуск Flask API в отдельном потоке"""
