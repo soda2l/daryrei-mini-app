@@ -744,9 +744,9 @@ class DaryReiBot:
         elif data == "admin_reset":
             await self.handle_admin_reset(update, context)
         elif data == "admin_add_product":
-            await self.add_product_command(update, context)
+            await self.handle_admin_add_product(update, context)
         elif data == "admin_add_category":
-            await self.add_category_command(update, context)
+            await self.handle_admin_add_category(update, context)
         elif data.startswith("add_product_category_"):
             category_id = data.replace("add_product_category_", "")
             await self.handle_add_product_category(update, context, category_id)
@@ -779,6 +779,53 @@ class DaryReiBot:
             "Используйте /admin для управления каталогом.",
             parse_mode='HTML'
         )
+    
+    async def handle_admin_add_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка добавления товара через кнопку"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        # Показываем доступные категории
+        categories = self.catalog.get("categories", [])
+        if not categories:
+            await update.callback_query.edit_message_text("❌ Сначала добавьте категории командой /add_category")
+            return
+        
+        text = "📦 <b>Добавление товара</b>\n\nВыберите категорию:"
+        keyboard = []
+        
+        for category in categories:
+            keyboard.append([InlineKeyboardButton(
+                f"📁 {category['name']}", 
+                callback_data=f"add_product_category_{category['id']}"
+            )])
+        
+        keyboard.append([InlineKeyboardButton("❌ Отмена", callback_data="admin_cancel")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def handle_admin_add_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка добавления категории через кнопку"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        await update.callback_query.edit_message_text(
+            "📁 <b>Добавление категории</b>\n\n"
+            "Отправьте сообщение в формате:\n"
+            "<code>название_категории|описание</code>\n\n"
+            "Пример: <code>свечи|Ароматические свечи ручной работы</code>",
+            parse_mode='HTML'
+        )
+        
+        # Устанавливаем состояние ожидания ввода категории
+        context.user_data['waiting_for_category'] = True
     
     async def handle_add_product_category(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id):
         """Обработка выбора категории для добавления товара"""
