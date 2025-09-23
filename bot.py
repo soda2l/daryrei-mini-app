@@ -57,23 +57,7 @@ class DaryReiBot:
         """Настройка обработчиков команд"""
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
-        self.application.add_handler(CommandHandler("catalog", self.catalog_command))
-        self.application.add_handler(CommandHandler("test", self.test_command))
-        self.application.add_handler(CommandHandler("debug", self.debug_command))
-        self.application.add_handler(CommandHandler("webapp", self.webapp_test_command))
-        # self.application.add_handler(CommandHandler("testwebapp", self.test_webapp_data_command))
-        
-        # Админские команды
         self.application.add_handler(CommandHandler("admin", self.admin_command))
-        self.application.add_handler(CommandHandler("add_product", self.add_product_command))
-        self.application.add_handler(CommandHandler("delete_product", self.delete_product_command))
-        self.application.add_handler(CommandHandler("add_category", self.add_category_command))
-        self.application.add_handler(CommandHandler("delete_category", self.delete_category_command))
-        self.application.add_handler(CommandHandler("list_products", self.list_products_command))
-        self.application.add_handler(CommandHandler("list_categories", self.list_categories_command))
-        self.application.add_handler(CommandHandler("reset", self.reset_command))
-        self.application.add_handler(CommandHandler("update_catalog", self.update_catalog_command))
-        self.application.add_handler(CommandHandler("delete_product_by_category", self.delete_product_by_category_command))
         
         self.application.add_handler(CallbackQueryHandler(self.button_callback))
         
@@ -308,31 +292,19 @@ class DaryReiBot:
         """Обработчик команды /help"""
         user_id = update.effective_user.id
         
-        help_text = """Доступные команды:
+        help_text = """🛍️ <b>Доступные команды:</b>
+
 /start - Начать работу с ботом
-/help - Показать эту справку
-/catalog - Открыть каталог товаров
-/test - Тест отправки в группу
-/webapp - Тест WebApp
-/testwebapp - Тест обработки WebApp данных
-/debug - Отправить тестовый заказ"""
+/help - Показать эту справку"""
         
         # Добавляем админские команды если пользователь админ
         if self.is_admin(user_id):
             help_text += """
 
-🛠️ Админские команды:
-/admin - Админ-панель
-/add_product - Добавить товар
-/delete_product - Удалить товар
-/delete_product_by_category - Удалить товары по категории
-/add_category - Добавить категорию
-/delete_category - Удалить категорию
-/list_products - Показать все товары
-/list_categories - Показать все категории
-/update_catalog - Обновить каталог"""
+🛠️ <b>Админские команды:</b>
+/admin - Админ-панель"""
         
-        await update.message.reply_text(help_text)
+        await update.message.reply_text(help_text, parse_mode='HTML')
     
     async def test_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Тестовая команда для проверки отправки в группу"""
@@ -411,11 +383,6 @@ class DaryReiBot:
         
         text = f"""🛠️ <b>АДМИН-ПАНЕЛЬ</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━
-
-<b>📋 Как пользоваться:</b>
-• Нажимайте на кнопки для навигации
-• Используйте кнопку "Назад" для возврата
-• Сообщения удаляются автоматически
 
 📊 <b>Статистика:</b>
 • Всего товаров: {products_count}
@@ -1063,11 +1030,6 @@ class DaryReiBot:
         text = f"""🛠️ <b>АДМИН-ПАНЕЛЬ</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
-<b>📋 Как пользоваться:</b>
-• Нажимайте на кнопки для навигации
-• Используйте кнопку "Назад" для возврата
-• Сообщения удаляются автоматически
-
 📊 <b>Статистика:</b>
 • Всего товаров: {products_count}
 • Всего категорий: {categories_count}
@@ -1713,8 +1675,7 @@ class DaryReiBot:
 Отправьте еще фото или нажмите 'Готово' для завершения"""
                 
                 keyboard = [
-                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
-                    [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
