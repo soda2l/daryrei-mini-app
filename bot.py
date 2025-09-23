@@ -1561,7 +1561,7 @@ class DaryReiBot:
     async def handle_category_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
         """Обработка ввода категории"""
         try:
-                name = message_text.strip()
+            name = message_text.strip()
             
             if not name:
                 text = "❌ <b>Добавление категории</b>\n\nНазвание категории не может быть пустым"
@@ -1747,7 +1747,7 @@ class DaryReiBot:
                 logger.info(f"Скачиваем фото: {download_url}")
             
             try:
-            import urllib.request
+                import urllib.request
                 urllib.request.urlretrieve(download_url, filepath)
                 logger.info(f"Фото успешно скачано: {filepath}")
             except Exception as urllib_error:
