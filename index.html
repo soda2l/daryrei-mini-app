@@ -2186,6 +2186,8 @@
             
             // Убираем transition для мгновенного изменения
             galleryImage.style.transition = 'none';
+            
+            // Правильная анимация: direction > 0 (следующее) уходит влево, direction < 0 (предыдущее) уходит вправо
             galleryImage.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
             galleryImage.style.opacity = '0';
             
@@ -2199,6 +2201,10 @@
                 }
                 
                 showCurrentImage();
+                
+                // Новое изображение появляется с противоположной стороны
+                // direction > 0 (следующее) появляется справа, direction < 0 (предыдущее) появляется слева
+                galleryImage.style.transform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
                 
                 // Восстанавливаем transition и анимируем появление
                 galleryImage.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
