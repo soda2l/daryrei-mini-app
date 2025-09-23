@@ -411,31 +411,111 @@ class DaryReiBot:
     
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Команда /start"""
-        user_id = update.effective_user.id
-        user_name = update.effective_user.first_name
-        
-        welcome_text = f"""👋 <b>Привет, {user_name}!</b>
+        welcome_text = """🕯️ <b>Магазин авторских свечей DaryRei</b>
 
-Добро пожаловать в магазин <b>DaryRei</b>! 🌟
+✨ Уют, аромат и тепло в каждой свече
 
-Здесь вы найдете:
-🕯️ Ароматические свечи ручной работы
-📦 Подарочные наборы
-🏠 Домашний декор
-💌 Открытки
-
-Для просмотра каталога нажмите кнопку ниже:"""
+Нажмите старт, чтобы начать работу 🔥"""
 
         keyboard = [
-            [InlineKeyboardButton("🛍️ Открыть каталог", web_app=WebAppInfo(url="https://daryreibot.duckdns.org/"))],
-            [InlineKeyboardButton("📞 Связаться с нами", url="https://t.me/daryrei_support")]
+            [InlineKeyboardButton("🚀 Начать покупки", callback_data="start_shopping")]
         ]
-        
-        if self.is_admin(user_id):
-            keyboard.append([InlineKeyboardButton("🛠️ Админ-панель", callback_data="admin_panel")])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Главное меню бота"""
+        text = "Выберите действие:"
+        
+        keyboard = [
+            [InlineKeyboardButton("ℹ️ О нас", callback_data="about_us")],
+            [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://daryreibot.duckdns.org/"))],
+            [InlineKeyboardButton("📢 Основной канал", url="https://t.me/daryreflexive1999")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_about_us(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Раздел 'О нас'"""
+        text = """Иногда все, что нужно - это отключить мысли и просто улыбаться😊. Здесь ты не найдешь место для философских размышлений. Мои свечи идеально подойдут для душевного отдыха в одиночестве или в компании🤗. А выбранные запахи помогут расслабиться, отвлечься от забот и провести вечер с удовольствием🕯️.
+
+Бывают дни, когда хочется спрятаться от забот, забраться под плед с чашкой чая☕️, и зажечь свечу, которое не требует усилий, но при этом гарантировано поднимает настроение😌. Именно для таких случаев создана эта подборка.
+
+Тебя ждут легкие, теплые, местами романтичные нотки аромата свечей - идеальные спутники для уютного вечера🌙✨."""
+        
+        keyboard = [
+            [InlineKeyboardButton("❓ Часто задаваемые вопросы", callback_data="faq")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="back_to_main")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_faq(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Часто задаваемые вопросы"""
+        text = "Часто задаваемые вопросы:"
+        
+        keyboard = [
+            [InlineKeyboardButton("🚚 Сколько времени занимает доставка?", callback_data="faq_delivery")],
+            [InlineKeyboardButton("🕯️ Памятка по уходу за свечами", callback_data="faq_care")],
+            [InlineKeyboardButton("🪔 Можно ли выбрать воск?", callback_data="faq_wax")],
+            [InlineKeyboardButton("🎨 Можно ли выбрать цвет свечи?", callback_data="faq_color")],
+            [InlineKeyboardButton("✨ Как сделать свою свечу уникальной?", callback_data="faq_unique")],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="back_to_about")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_faq_delivery(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """FAQ: Доставка"""
+        text = "🚚 <b>Сколько времени занимает доставка?</b>\n\nОбычно от 2-х дней(зависит от расстояния)📦"
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="faq")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_faq_care(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """FAQ: Уход за свечами"""
+        text = """⚠️ <b>Памятка по уходу за свечами:</b>
+
+Перед тем как зажечь свечу обрежьте фитиль(0,5см - 0,6см)✂️
+Зажигаете свечу минимум на час, чтобы воск растаял правильно⏰
+Повторное зажигание — не менее чем через 2 часа⏳
+Не держите свечу дольше 4 часов🕐
+Гасите крышкой🛡️
+Не оставляйте без присмотра👀
+Хранить в прохладном, сухом месте, вдали от солнца🌡️"""
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="faq")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_faq_wax(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """FAQ: Выбор воска"""
+        text = "🪔 <b>Можно ли выбрать воск?</b>\n\nДа, я использую соевый и кокосовый воск 🥥🍃"
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="faq")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_faq_color(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """FAQ: Выбор цвета"""
+        text = "🎨 <b>Можно ли выбрать цвет свечи?</b>\n\nДа, до двух оттенков или градиент🌈"
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="faq")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+
+    async def show_faq_unique(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """FAQ: Уникальность свечи"""
+        text = "✨ <b>Как сделать свою свечу уникальной?</b>\n\nМожно добавить сухоцветы, фрукты, сладости, шиммер или минералы🌸🍓✨"
+        
+        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="faq")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
 
     async def reset_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Сброс состояний админа"""
