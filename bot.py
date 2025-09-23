@@ -1515,6 +1515,7 @@ class DaryReiBot:
         elif data.startswith("edit_product_name_"):
 
             product_id = data.replace("edit_product_name_", "")
+            logger.info(f"Обработка edit_product_name_: data='{data}', извлеченный product_id='{product_id}'")
 
             await self.handle_edit_product_name(update, context, product_id)
 
@@ -1539,6 +1540,7 @@ class DaryReiBot:
         elif data.startswith("edit_product_"):
 
             product_id = data.replace("edit_product_", "")
+            logger.info(f"Обработка edit_product_: data='{data}', извлеченный product_id='{product_id}'")
 
             await self.handle_edit_product(update, context, product_id)
 
@@ -2082,6 +2084,8 @@ class DaryReiBot:
     async def handle_edit_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE, product_id):
         """Обработка редактирования конкретного товара"""
         user_id = update.effective_user.id
+        
+        logger.info(f"handle_edit_product вызван с product_id: '{product_id}'")
         
         if not self.is_admin(user_id):
             await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
