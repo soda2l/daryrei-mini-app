@@ -425,8 +425,7 @@ class DaryReiBot:
         
         keyboard = [
             [InlineKeyboardButton("📦 УПРАВЛЕНИЕ ТОВАРАМИ", callback_data="admin_products")],
-            [InlineKeyboardButton("📁 УПРАВЛЕНИЕ КАТЕГОРИЯМИ", callback_data="admin_categories")],
-            [InlineKeyboardButton("🔄 Сбросить состояния", callback_data="admin_reset")]
+            [InlineKeyboardButton("📁 УПРАВЛЕНИЕ КАТЕГОРИЯМИ", callback_data="admin_categories")]
         ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -816,6 +815,9 @@ class DaryReiBot:
         elif data.startswith("delete_product_"):
             product_id = data.replace("delete_product_", "")
             await self.handle_delete_product(update, context, product_id)
+        elif data.startswith("delete_products_category_"):
+            category_id = data.replace("delete_products_category_", "")
+            await self.show_products_to_delete(update, context, category_id)
         elif data.startswith("delete_category_"):
             category_id = data.replace("delete_category_", "")
             await self.handle_delete_category(update, context, category_id)
@@ -936,10 +938,7 @@ class DaryReiBot:
             for category in categories:
                 product_count = products_by_category.get(category['id'], 0)
                 text += f"<b>📁 {category['name']}</b>\n"
-                text += f"• Товаров: {product_count}\n"
-                if category.get('description'):
-                    text += f"• Описание: {category['description']}\n"
-                text += "\n"
+                text += f"• Товаров: {product_count}\n\n"
         
         keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -973,6 +972,46 @@ class DaryReiBot:
                     )])
             
             keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    
+    async def show_products_to_delete(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_id: str):
+        """Показать товары для удаления в выбранной категории"""
+        user_id = update.effective_user.id
+        
+        if not self.is_admin(user_id):
+            await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
+            return
+        
+        products = self.catalog.get("products", [])
+        categories = self.catalog.get("categories", [])
+        
+        # Находим название категории
+        category_name = "Неизвестная категория"
+        for cat in categories:
+            if cat['id'] == category_id:
+                category_name = cat['name']
+                break
+        
+        # Фильтруем товары по категории
+        category_products = [p for p in products if p.get('category') == category_id]
+        
+        if not category_products:
+            text = f"🗑️ <b>УДАЛЕНИЕ ТОВАРОВ</b>\n\n📁 Категория: {category_name}\n\n❌ В этой категории нет товаров"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_delete_products")]]
+        else:
+            text = f"🗑️ <b>УДАЛЕНИЕ ТОВАРОВ</b>\n\n📁 Категория: {category_name}\n\nВыберите товар для удаления:"
+            keyboard = []
+            
+            for product in category_products:
+                status = "✅" if product.get('available', True) else "❌"
+                keyboard.append([InlineKeyboardButton(
+                    f"{status} {product['name']} - {product['price']} ₽", 
+                    callback_data=f"delete_product_{product['id']}"
+                )])
+            
+            keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="admin_delete_products")])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
@@ -1037,8 +1076,7 @@ class DaryReiBot:
         
         keyboard = [
             [InlineKeyboardButton("📦 УПРАВЛЕНИЕ ТОВАРАМИ", callback_data="admin_products")],
-            [InlineKeyboardButton("📁 УПРАВЛЕНИЕ КАТЕГОРИЯМИ", callback_data="admin_categories")],
-            [InlineKeyboardButton("🔄 Сбросить состояния", callback_data="admin_reset")]
+            [InlineKeyboardButton("📁 УПРАВЛЕНИЕ КАТЕГОРИЯМИ", callback_data="admin_categories")]
         ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1140,12 +1178,7 @@ class DaryReiBot:
         
         text = """📁 <b>Добавление категории</b>
 
-Отправьте сообщение в формате:
-<code>название_категории|описание</code>
-
-Пример: <code>свечи|Ароматические свечи ручной работы</code>
-
-<b>Или просто название категории без описания</b>"""
+Отправьте название категории:"""
         
         keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1392,16 +1425,25 @@ class DaryReiBot:
                         # Завершаем добавление товара
                         context.user_data.pop('waiting_for_product_photos', None)
                         context.user_data.pop('current_product_id', None)
-                        await update.message.reply_text(
-                            "✅ <b>Товар успешно добавлен в каталог!</b>\n\n"
-                            "Используйте /admin для управления каталогом",
-                            parse_mode='HTML'
-                        )
+                        context.user_data.pop('selected_category', None)
+                        context.user_data.pop('product_name', None)
+                        context.user_data.pop('product_description', None)
+                        
+                        text = "✅ <b>Товар успешно добавлен!</b>\n\nВозвращаемся в меню управления товарами..."
+                        keyboard = [[InlineKeyboardButton("📦 Управление товарами", callback_data="admin_products")]]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+                        
+                        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                         return
                     else:
-                        await update.message.reply_text(
-                            "📸 Отправьте фото товара или напишите 'готово' для завершения"
-                        )
+                        text = "📸 <b>Добавление фото</b>\n\nОтправьте изображения для товара или нажмите 'Готово'"
+                        keyboard = [
+                            [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+                            [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+                        ]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+                        
+                        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                         return
                 else:
                     # Админ без активных состояний - показываем меню
@@ -1438,17 +1480,13 @@ class DaryReiBot:
     async def handle_category_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
         """Обработка ввода категории"""
         try:
-            # Парсим ввод: название|описание
-            if '|' in message_text:
-                name, description = message_text.split('|', 1)
-                name = name.strip()
-                description = description.strip()
-            else:
-                name = message_text.strip()
-                description = ""
+            name = message_text.strip()
             
             if not name:
-                await update.message.reply_text("❌ Название категории не может быть пустым")
+                text = "❌ <b>Добавление категории</b>\n\nНазвание категории не может быть пустым"
+                keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                 return
             
             # Создаем ID категории (транслитерация)
@@ -1458,25 +1496,38 @@ class DaryReiBot:
             # Проверяем, не существует ли уже такая категория
             for cat in self.catalog.get("categories", []):
                 if cat["id"] == category_id:
-                    await update.message.reply_text("❌ Категория с таким названием уже существует")
+                    text = f"❌ <b>Добавление категории</b>\n\nКатегория с названием '{name}' уже существует"
+                    keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
                     return
             
             # Добавляем категорию
-            if self.add_category(category_id, name, description):
-                await update.message.reply_text(
-                    f"✅ Категория <b>{name}</b> успешно добавлена!\n"
-                    f"🆔 ID: <code>{category_id}</code>",
-                    parse_mode='HTML'
-                )
+            if self.add_category(category_id, name, ""):
+                text = f"""✅ <b>Категория добавлена!</b>
+
+📁 <b>{name}</b>
+🆔 ID: <code>{category_id}</code>
+
+Возвращаемся в меню управления категориями..."""
+                keyboard = [[InlineKeyboardButton("📁 Управление категориями", callback_data="admin_categories")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
             else:
-                await update.message.reply_text("❌ Ошибка при добавлении категории")
+                text = "❌ <b>Добавление категории</b>\n\nОшибка при добавлении категории"
+                keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
             
             # Сбрасываем состояние
             context.user_data.pop('waiting_for_category', None)
             
         except Exception as e:
             logger.error(f"Ошибка при обработке ввода категории: {e}")
-            await update.message.reply_text("❌ Ошибка при обработке ввода категории")
+            text = "❌ <b>Добавление категории</b>\n\nОшибка при обработке ввода категории"
+            keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_categories")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
     
     async def handle_product_name_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
         """Обработка ввода названия товара"""
@@ -1540,10 +1591,9 @@ class DaryReiBot:
 📁 Категория: {category_id}
 🆔 ID: <code>{product_id}</code>
 
-📸 Для добавления фото отправьте изображения"""
+📸 Для добавления фото отправьте изображения или нажмите "Готово" """
                 
                 keyboard = [
-                    [InlineKeyboardButton("📸 Добавить фото", callback_data="add_photos")],
                     [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
                     [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
                 ]
