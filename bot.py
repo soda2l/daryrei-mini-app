@@ -1817,6 +1817,7 @@ class DaryReiBot:
         context.user_data.pop('product_description', None)
         context.user_data.pop('product_price', None)
         context.user_data.pop('product_images', None)
+        context.user_data.pop('temp_product', None)
         
         # Возвращаемся в меню управления товарами
         await self.show_admin_products_menu(update, context)
@@ -1829,14 +1830,37 @@ class DaryReiBot:
             await update.callback_query.edit_message_text("❌ У вас нет прав доступа")
             return
         
-        # Очищаем состояния
+        # Получаем данные товара из временного хранилища
+        temp_product = context.user_data.get('temp_product')
+        if not temp_product:
+            await update.callback_query.edit_message_text("❌ Данные товара не найдены")
+            return
+        
+        # Добавляем товар в каталог
+        success = self.add_product(
+            temp_product['id'],
+            temp_product['name'],
+            temp_product['description'],
+            temp_product['price'],
+            temp_product['category'],
+            temp_product['images']
+        )
+        
+        if success:
+            text = f"✅ <b>Товар успешно добавлен в каталог!</b>\n\n📦 <b>{temp_product['name']}</b>\n\nВозвращаемся в меню управления товарами..."
+        else:
+            text = "❌ <b>Ошибка при добавлении товара в каталог</b>\n\nВозвращаемся в меню управления товарами..."
+        
+        # Очищаем все состояния и временные данные
         context.user_data.pop('waiting_for_product_photos', None)
         context.user_data.pop('current_product_id', None)
         context.user_data.pop('selected_category', None)
         context.user_data.pop('product_name', None)
         context.user_data.pop('product_description', None)
+        context.user_data.pop('product_price', None)
+        context.user_data.pop('product_images', None)
+        context.user_data.pop('temp_product', None)
         
-        text = "✅ <b>Товар успешно добавлен!</b>\n\nВозвращаемся в меню управления товарами..."
         keyboard = [[InlineKeyboardButton("📦 Управление товарами", callback_data="admin_products")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -2307,21 +2331,19 @@ class DaryReiBot:
 
                     if message_text.lower().strip() in ['готово', 'готово!', 'завершить', 'закончить']:
 
-                        # Завершаем добавление товара
-
-                        context.user_data.pop('waiting_for_product_photos', None)
-
-                        context.user_data.pop('current_product_id', None)
-
-                        context.user_data.pop('selected_category', None)
-                        context.user_data.pop('product_name', None)
-                        context.user_data.pop('product_description', None)
+                        # Завершаем добавление товара через функцию handle_finish_product
+                        # Создаем фиктивный callback_query для совместимости
+                        class FakeCallbackQuery:
+                            def __init__(self, message):
+                                self.message = message
+                                self.data = "finish_product"
                         
-                        text = "✅ <b>Товар успешно добавлен!</b>\n\nВозвращаемся в меню управления товарами..."
-                        keyboard = [[InlineKeyboardButton("📦 Управление товарами", callback_data="admin_products")]]
-                        reply_markup = InlineKeyboardMarkup(keyboard)
+                        fake_update = type('obj', (object,), {
+                            'callback_query': FakeCallbackQuery(update.message),
+                            'effective_user': update.effective_user
+                        })
                         
-                        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+                        await self.handle_finish_product(fake_update, context)
                         return
 
                     else:
@@ -2556,11 +2578,18 @@ class DaryReiBot:
 
             
 
-            # Добавляем товар (пока без фото)
+            # Сохраняем данные товара во временном хранилище (не добавляем в каталог пока)
 
-            if self.add_product(product_id, name, description, price, category_id, []):
+            context.user_data['temp_product'] = {
+                'id': product_id,
+                'name': name,
+                'description': description,
+                'price': price,
+                'category': category_id,
+                'images': []
+            }
 
-                text = f"""✅ <b>Товар добавлен!</b>
+            text = f"""✅ <b>Данные товара сохранены!</b>
 
 📦 <b>{name}</b>
 💰 Цена: {price} ₽
@@ -2569,24 +2598,17 @@ class DaryReiBot:
 
 📸 Для добавления фото отправьте изображения или нажмите "Готово" """
                 
-                keyboard = [
-                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
-                    [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
-                
-
-                # Устанавливаем состояние ожидания фото
-
-                context.user_data['waiting_for_product_photos'] = True
-
-                context.user_data['current_product_id'] = product_id
-
-            else:
-
-                await update.message.reply_text("❌ Ошибка при добавлении товара")
+            keyboard = [
+                [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+                [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+            
+            # Устанавливаем состояние ожидания фото
+            context.user_data['waiting_for_product_photos'] = True
+            context.user_data['current_product_id'] = product_id
 
             
 
@@ -2717,51 +2739,34 @@ class DaryReiBot:
                     raise urllib_error
             
 
-            # Добавляем фото к товару
+            # Добавляем фото во временное хранилище
 
-            product = None
+            temp_product = context.user_data.get('temp_product')
+            if not temp_product:
+                await update.message.reply_text("❌ Ошибка: данные товара не найдены")
+                return
 
-            for p in self.catalog.get("products", []):
+            if "images" not in temp_product:
+                temp_product["images"] = []
+            temp_product["images"].append(filename)
 
-                if p["id"] == product_id:
+            # Обновляем временное хранилище
+            context.user_data['temp_product'] = temp_product
 
-                    product = p
+            text = f"""✅ <b>Фото добавлено!</b>
 
-                    break
-
-            
-
-            if product:
-
-                if "images" not in product:
-
-                    product["images"] = []
-
-                product["images"].append(filename)
-
-                self.save_catalog()
-
-                
-
-                text = f"""✅ <b>Фото добавлено!</b>
-
-📦 <b>{product['name']}</b>
-📸 Всего фото: {len(product['images'])}
+📦 <b>{temp_product['name']}</b>
+📸 Всего фото: {len(temp_product['images'])}
 
 Отправьте еще фото или нажмите 'Готово' для завершения"""
-                
-                keyboard = [
-                    [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
-                    [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
-            else:
-
-                await update.message.reply_text("❌ Ошибка: товар не найден")
-
-                
+            
+            keyboard = [
+                [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
+                [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
 
         except Exception as e:
 
