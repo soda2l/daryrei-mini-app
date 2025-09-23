@@ -2198,11 +2198,11 @@
             // Проверяем, что это горизонтальный свайп
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
                 if (deltaX > 0) {
-                    // Свайп вправо - предыдущее изображение
-                    changeGalleryImage(-1);
-                } else {
-                    // Свайп влево - следующее изображение
+                    // Свайп вправо - следующее изображение
                     changeGalleryImage(1);
+                } else {
+                    // Свайп влево - предыдущее изображение
+                    changeGalleryImage(-1);
                 }
             }
         }
@@ -2349,9 +2349,29 @@
                         }
                     });
                     
+                    // Если кнопка не найдена по onclick, ищем по тексту
+                    if (!activeButton) {
+                        categoryButtons.forEach(btn => {
+                            if (category === 'all' && btn.textContent.includes('Все товары')) {
+                                btn.classList.add('active');
+                                activeButton = btn;
+                            } else if (category !== 'all') {
+                                // Ищем по названию категории
+                                const categoryData = catalog.categories.find(cat => cat.id === category);
+                                if (categoryData && btn.textContent.includes(categoryData.name)) {
+                                    btn.classList.add('active');
+                                    activeButton = btn;
+                                }
+                            }
+                        });
+                    }
+                    
                     // Автопрокрутка к активной кнопке
                     if (activeButton) {
+                        console.log('Автопрокрутка к категории:', category, 'кнопка:', activeButton.textContent);
                         scrollToActiveCategory(activeButton);
+                    } else {
+                        console.log('Кнопка для категории не найдена:', category);
                     }
                     
                     // Фильтруем товары
