@@ -177,13 +177,21 @@ class DaryReiBot:
                 response.headers.add('Access-Control-Allow-Origin', '*')
                 return response, 500
         
-        @flask_app.route('/images/<path:filename>')
-        def serve_image(filename):
-            """Сервер для статических изображений"""
-            try:
-                return send_from_directory('images', filename)
-            except FileNotFoundError:
-                return "Image not found", 404
+@flask_app.route('/images/<path:filename>')
+def serve_image(filename):
+    """Сервер для статических изображений"""
+    try:
+        return send_from_directory('images', filename)
+    except FileNotFoundError:
+        return "Image not found", 404
+
+@flask_app.route('/')
+def serve_mini_app():
+    """Сервер для мини-приложения"""
+    try:
+        return send_from_directory('.', 'index.html')
+    except FileNotFoundError:
+        return "Mini app not found", 404
     
     def run_flask(self):
         """Запуск Flask API в отдельном потоке"""
@@ -247,8 +255,12 @@ class DaryReiBot:
             "description": description
         }
         self.catalog["categories"].append(category)
-        self.save_catalog()
-        return True
+        success = self.save_catalog()
+        if success:
+            logger.info(f"Категория {name} (ID: {category_id}) добавлена в каталог")
+        else:
+            logger.error(f"Ошибка при сохранении категории {name} (ID: {category_id})")
+        return success
     
     def delete_category(self, category_id):
         """Удалить категорию"""
@@ -270,8 +282,12 @@ class DaryReiBot:
             "available": available
         }
         self.catalog["products"].append(product)
-        self.save_catalog()
-        return True
+        success = self.save_catalog()
+        if success:
+            logger.info(f"Товар {name} (ID: {product_id}) добавлен в каталог")
+        else:
+            logger.error(f"Ошибка при сохранении товара {name} (ID: {product_id})")
+        return success
     
     def delete_product(self, product_id):
         """Удалить товар"""
