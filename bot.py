@@ -2329,7 +2329,7 @@ class DaryReiBot:
                         text = "📸 <b>Добавление фото</b>\n\nОтправьте изображения для товара или нажмите 'Готово'"
                         keyboard = [
                             [InlineKeyboardButton("✅ Готово", callback_data="finish_product")],
-                            [InlineKeyboardButton("⬅️ Назад", callback_data="admin_products")]
+                            [InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]
                         ]
                         reply_markup = InlineKeyboardMarkup(keyboard)
                         
@@ -2491,7 +2491,7 @@ class DaryReiBot:
         
 
         text = "📝 <b>Добавление товара</b>\n\nОтправьте описание товара:"
-        keyboard = [[InlineKeyboardButton("⬅️ Назад", callback_data="admin_add_product")]]
+        keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="cancel_add_product")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
