@@ -1020,13 +1020,8 @@
                 <p>Выберите категорию или найдите нужный товар</p>
             </div>
 
-            <div class="category-filter">
-                <button class="category-btn active" onclick="filterProducts('all')">Все товары</button>
-                <button class="category-btn" onclick="filterProducts('candles')">🕯️ Свечи</button>
-                <button class="category-btn" onclick="filterProducts('boxes')">📦 Коробки</button>
-                <button class="category-btn" onclick="filterProducts('postcards')">💌 Открытки</button>
-                <button class="category-btn" onclick="filterProducts('stickers')">🏷️ Стикеры</button>
-                <button class="category-btn" onclick="filterProducts('home')">🏠 Для дома</button>
+            <div class="category-filter" id="category-filter">
+                <!-- Категории будут загружены динамически -->
             </div>
 
             <div class="products-grid" id="all-products">
@@ -1363,6 +1358,9 @@
             console.log('📦 Товаров для отображения:', products.length);
             console.log('📁 Категорий:', categories.length);
             
+            // Создаем кнопки категорий динамически
+            createCategoryButtons();
+            
             displayFeaturedProducts();
             updateCartCount();
             
@@ -1379,6 +1377,50 @@
             setupUsernameInput();
             
             console.log('✅ Приложение инициализировано');
+        }
+
+        // Создание кнопок категорий динамически
+        function createCategoryButtons() {
+            const categoryFilter = document.getElementById('category-filter');
+            if (!categoryFilter) {
+                console.error('❌ Элемент category-filter не найден');
+                return;
+            }
+            
+            // Очищаем существующие кнопки
+            categoryFilter.innerHTML = '';
+            
+            // Добавляем кнопку "Все товары"
+            const allButton = document.createElement('button');
+            allButton.className = 'category-btn active';
+            allButton.onclick = () => filterProducts('all');
+            allButton.textContent = 'Все товары';
+            categoryFilter.appendChild(allButton);
+            
+            // Добавляем кнопки для каждой категории
+            if (catalog.categories && catalog.categories.length > 0) {
+                catalog.categories.forEach(category => {
+                    const button = document.createElement('button');
+                    button.className = 'category-btn';
+                    button.onclick = () => filterProducts(category.id);
+                    
+                    // Добавляем эмодзи в зависимости от категории
+                    let emoji = '📦';
+                    switch(category.id) {
+                        case 'candles': emoji = '🕯️'; break;
+                        case 'boxes': emoji = '📦'; break;
+                        case 'postcards': emoji = '💌'; break;
+                        case 'stickers': emoji = '🏷️'; break;
+                        case 'home': emoji = '🏠'; break;
+                        default: emoji = '📦';
+                    }
+                    
+                    button.textContent = `${emoji} ${category.name}`;
+                    categoryFilter.appendChild(button);
+                });
+            }
+            
+            console.log('✅ Кнопки категорий созданы динамически');
         }
 
         // Инициализация
