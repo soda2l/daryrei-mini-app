@@ -2006,8 +2006,10 @@ class DaryReiBot:
         
         # Показываем только категории, в которых есть товары
         categories_with_products = []
+        logger.info(f"Проверяем категории для редактирования. Всего категорий: {len(categories)}, товаров: {len(products)}")
         for category in categories:
             category_products = [p for p in products if p.get('category') == category['id']]
+            logger.info(f"Категория '{category['name']}' (ID: {category['id']}): {len(category_products)} товаров")
             if category_products:
                 categories_with_products.append(category)
         
@@ -2063,8 +2065,10 @@ class DaryReiBot:
         text = f"✏️ <b>Редактирование товара</b>\n\n📁 Категория: {category_name}\n\nВыберите товар для редактирования:"
         keyboard = []
         
+        logger.info(f"Показываем товары для редактирования в категории {category_name}:")
         for product in category_products:
             status = "✅" if product.get('available', True) else "❌"
+            logger.info(f"Товар: ID='{product['id']}', название='{product['name']}', цена={product['price']}")
             keyboard.append([InlineKeyboardButton(
                 f"{status} {product['name']} - {product['price']} ₽", 
                 callback_data=f"edit_product_{product['id']}"
@@ -2085,19 +2089,25 @@ class DaryReiBot:
         
         # Находим товар
         products = self.catalog.get("products", [])
-        logger.info(f"Ищем товар с ID: {product_id}")
+        logger.info(f"Ищем товар с ID: '{product_id}' (длина: {len(product_id)})")
         logger.info(f"Всего товаров в каталоге: {len(products)}")
         for p in products:
-            logger.info(f"Товар в каталоге: ID={p['id']}, название={p['name']}")
+            logger.info(f"Товар в каталоге: ID='{p['id']}' (длина: {len(p['id'])}), название='{p['name']}'")
+            # Проверяем точное совпадение
+            if p['id'] == product_id:
+                logger.info(f"✅ ТОЧНОЕ СОВПАДЕНИЕ НАЙДЕНО!")
+            else:
+                logger.info(f"❌ Не совпадает: '{p['id']}' != '{product_id}'")
         
         product = None
         for p in products:
             if p["id"] == product_id:
                 product = p
+                logger.info(f"✅ Товар найден: {p['name']}")
                 break
         
         if not product:
-            logger.error(f"Товар с ID {product_id} не найден в каталоге")
+            logger.error(f"Товар с ID '{product_id}' не найден в каталоге")
             await update.callback_query.edit_message_text("❌ Товар не найден")
             return
         
