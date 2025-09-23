@@ -176,22 +176,22 @@ class DaryReiBot:
                 response = jsonify({"error": str(e)})
                 response.headers.add('Access-Control-Allow-Origin', '*')
                 return response, 500
-        
-@flask_app.route('/images/<path:filename>')
-def serve_image(filename):
-    """Сервер для статических изображений"""
-    try:
-        return send_from_directory('images', filename)
-    except FileNotFoundError:
-        return "Image not found", 404
+    
+    @flask_app.route('/images/<path:filename>')
+    def serve_image(filename):
+        """Сервер для статических изображений"""
+        try:
+            return send_from_directory('images', filename)
+        except FileNotFoundError:
+            return "Image not found", 404
 
-@flask_app.route('/')
-def serve_mini_app():
-    """Сервер для мини-приложения"""
-    try:
-        return send_from_directory('.', 'index.html')
-    except FileNotFoundError:
-        return "Mini app not found", 404
+    @flask_app.route('/')
+    def serve_mini_app():
+        """Сервер для мини-приложения"""
+        try:
+            return send_from_directory('.', 'index.html')
+        except FileNotFoundError:
+            return "Mini app not found", 404
     
     def run_flask(self):
         """Запуск Flask API в отдельном потоке"""
@@ -1461,9 +1461,7 @@ def serve_mini_app():
         logger.info("Flask API запущен на порту 8000")
         self.application.run_polling()
 
-# Создаем экземпляр бота
-bot = DaryReiBot()
-
 # Запускаем бота
 if __name__ == "__main__":
+    bot = DaryReiBot()
     bot.run()
